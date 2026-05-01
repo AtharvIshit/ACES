@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1>{{ assessment.title }}</h1>
+    <div class="flex" style="gap: 0.5rem;">
+        <a href="{% url 'attempt_list' assessment_pk=assessment.pk %}" class="btn btn-secondary">View Attempts</a>
+        <form method="post" action="{% url 'assessment_delete' pk=assessment.pk %}" style="display:inline;" onsubmit="return confirm('Delete this assessment and all its questions/attempts? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete Assessment</button>
+        </form>
+    </div>
+</div>
+<p class="text-muted">{{ assessment.job.title }} &middot; {{ assessment.duration_minutes }} min &middot; Passing: {{ assessment.passing_score }}%</p>
+{% if assessment.description %}
+<div class="card mb-2"><pre style="background: transparent; padding: 0;">{{ assessment.description }}</pre></div>
+{% endif %}
+
+<h2 style="margin: 2rem 0 1rem;">Questions ({{ assessment.total_questions }})</h2>
+<a href="{% url 'questions_generate_ai' pk=assessment.pk %}" class="btn btn-secondary mb-2">Generate with AI</a>
+    <a href="{% url 'question_add' pk=assessment.pk %}" class="btn btn-primary mb-2">Add Question</a>
+
+{% for q in assessment.questions.all %}
+<div class="card">
+    <div class="flex" style="justify-content: space-between;">
+        <div>
+            <strong>Q{{ forloop.counter }}.</strong> {{ q.question_text|truncatewords:20 }}{% if q.skill_category %} <span class="badge badge-neutral">{{ q.skill_category.name }}</span>{% endif %}
+        </div>
+        <div class="flex">
+            <a href="{% url 'question_edit' pk=q.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'question_delete' pk=q.pk %}" style="display:inline;" onsubmit="return confirm('Delete this question?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p class="text-muted">No questions yet. Add questions before candidates can take this assessment.</p>
+{% endfor %}
+
+<a href="{% url 'job_detail' pk=assessment.job.pk %}" class="btn btn-secondary mt-2">Back to Job</a>
+{% endblock %}

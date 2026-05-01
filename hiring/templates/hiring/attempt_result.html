@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">Assessment Result</h1>
+<div class="card mb-2">
+    <h2>{{ attempt.assessment.title }}</h2>
+    <p class="text-muted">{{ attempt.assessment.job.title }}</p>
+    <div class="flex mt-2" style="gap: 1.5rem; flex-wrap: wrap;">
+        <span class="badge {% if attempt.passed %}badge-success{% else %}badge-danger{% endif %}">
+            {{ attempt.percentage }}% — {% if attempt.passed %}Passed ✓{% else %}Not Passed{% endif %}
+        </span>
+        <span class="text-muted">Score: {{ attempt.score }}/{{ attempt.max_score }}</span>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Feedback & Areas to Improve</h3>
+    <pre style="background: transparent; padding: 0; white-space: pre-wrap;">{{ attempt.feedback }}</pre>
+</div>
+
+<h2 style="margin: 2rem 0 1rem;">Your Answers</h2>
+{% for ans in answers %}
+<div class="card" {% if ans.question.is_coding %}style="border-left: 3px solid var(--primary);"{% endif %}>
+
+    <div class="flex" style="gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+        <strong>Q{{ forloop.counter }}.</strong>
+        {% if ans.question.is_coding %}
+        <span class="badge" style="background: var(--primary); color: #fff; font-size: 0.7rem; padding: 0.1rem 0.4rem;">CODING</span>
+        <span class="badge badge-neutral" style="font-size: 0.7rem;">{{ ans.question.language|upper }}</span>
+        {% else %}
+        <span class="badge badge-neutral" style="font-size: 0.7rem;">MCQ</span>
+        {% endif %}
+    </div>
+
+    <p>{{ ans.question.question_text }}</p>
+
+    {% if ans.question.is_coding %}
+    <!-- Coding Answer Display -->
+    <div style="margin-top: 1rem;">
+        {% if ans.code_response %}
+        <div style="margin-bottom: 0.75rem;">
+            <label class="text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Your Code</label>
+            <pre style="background: #0d1117; color: #c9d1d9; padding: 1rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto; margin-top: 0.25rem; border: 1px solid #30363d;"><code>{{ ans.code_response }}</code></pre>
+        </div>
+        {% else %}
+        <p class="text-muted" style="font-style: italic;">No code submitted</p>
+        {% endif %}
+
+        <div class="flex" style="gap: 0.5rem; align-items: center; margin: 0.5rem 0;">
+            <span>Points: {{ ans.points_earned }}/{{ ans.question.points }}</span>
+            {% if ans.is_correct %}
+            <span class="badge badge-success">Passed</span>
+            {% else %}
+            <span class="badge badge-danger">Needs Improvement</span>
+            {% endif %}
+        </div>
+
+        {% if ans.ai_feedback %}
+        <div style="background: #f8f8f8; border: 1px solid #e0e0e0; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+            <label class="text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">AI Feedback</label>
+            <pre style="background: transparent; padding: 0; white-space: pre-wrap; font-size: 0.9rem; margin: 0;">{{ ans.ai_feedback }}</pre>
+        </div>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <!-- MCQ Answer Display -->
+    <p class="mt-1">
+        Your answer: {{ ans.selected_option.option_text|default:"(No answer)" }}
+        {% if ans.is_correct %}
+        <span class="badge badge-success">Correct</span>
+        {% else %}
+        <span class="badge badge-danger">Incorrect</span>
+        {% endif %}
+    </p>
+    {% if not ans.is_correct and ans.question.options.exists %}
+    <p class="text-muted" style="font-size: 0.9rem;">
+        Correct answer: {% for o in ans.question.options.all %}{% if o.is_correct %}{{ o.option_text }}{% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    {% endif %}
+</div>
+{% endfor %}
+
+<a href="{% url 'dashboard' %}" class="btn btn-primary">Back to Dashboard</a>
+{% endblock %}

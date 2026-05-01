@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">Jobs</h1>
+<a href="{% url 'job_create' %}" class="btn btn-primary mb-2">Post New Job</a>
+
+{% for job in jobs %}
+<div class="card brutalist-corners brutalist-border" style="border-radius: 0px !important; box-shadow: none !important; background: var(--card-bg);">
+    <div class="flex" style="justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h2><a href="{% url 'job_detail' pk=job.pk %}" style="color: inherit; text-decoration: none;">{{ job.title }}</a></h2>
+            <p class="text-muted">{{ job.department }} {% if job.location %} &middot; {{ job.location }}{% endif %}</p>
+        </div>
+        <div class="flex" style="gap: 0.5rem;">
+            <a href="{% url 'assessment_create' pk=job.pk %}" class="btn btn-secondary btn-sm">Add Assessment</a>
+            <form method="post" action="{% url 'job_delete' pk=job.pk %}" style="display:inline;" onsubmit="return confirm('Delete this job and ALL its assessments? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p class="text-muted">No jobs yet.</p>
+{% endfor %}
+{% endblock %}

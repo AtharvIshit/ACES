@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}ATTEMPT #{{ attempt.pk }} — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .back-link {
+        font-family: var(--font-label); font-size: 10px; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--text-muted) !important;
+        text-decoration: none !important; border-bottom: none !important;
+        margin-bottom: 1.5rem; display: inline-block; transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--rosso) !important; }
+
+    .cp-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2rem; letter-spacing: 0.05em; }
+
+    .overview-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 1rem; margin-bottom: 2.5rem;
+    }
+    .overview-card {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        padding: 1.5rem; text-align: center;
+    }
+    .overview-label {
+        font-family: var(--font-label); font-size: 9px;
+        letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    .overview-value {
+        font-family: var(--font-display); font-size: 1.75rem;
+        font-weight: 700; color: var(--text);
+    }
+
+    .answer-header {
+        font-family: var(--font-label); font-size: 10px;
+        letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted);
+        margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
+    }
+
+    .answer-card {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        padding: 1.75rem; margin-bottom: 1rem;
+        position: relative; overflow: hidden;
+        transition: border-color 0.15s;
+    }
+    .answer-card:hover { border-color: var(--rosso); }
+
+    .answer-card .q-number {
+        position: absolute; top: 0; right: 0;
+        background: var(--btn-bg); color: var(--btn-text);
+        font-family: var(--font-label); font-size: 10px;
+        letter-spacing: 1px; padding: 6px 14px;
+    }
+
+    .answer-card .q-text {
+        font-family: var(--font-body); font-size: 0.95rem;
+        line-height: 1.6; color: var(--text); margin-bottom: 1rem;
+        padding-right: 4rem;
+    }
+
+    .answer-card .q-type {
+        font-family: var(--font-label); font-size: 8px;
+        letter-spacing: 1px; text-transform: uppercase;
+        color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+
+    .answer-details {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+        margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle);
+    }
+    .answer-detail-item {
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .detail-key {
+        font-family: var(--font-label); font-size: 9px;
+        letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);
+    }
+    .detail-val {
+        font-family: var(--font-body); font-size: 0.85rem; color: var(--text);
+    }
+
+    .result-tag {
+        font-family: var(--font-label); font-size: 9px;
+        letter-spacing: 1px; text-transform: uppercase;
+        padding: 3px 10px; border: 1px solid; display: inline-block;
+    }
+    .tag-correct { color: var(--success); border-color: var(--success); }
+    .tag-wrong { color: var(--rosso); border-color: var(--rosso); }
+
+    .ai-feedback {
+        margin-top: 1rem; padding: 1rem; background: var(--surface-alt);
+        border: 1px solid var(--border-subtle); font-family: var(--font-label);
+        font-size: 0.8rem; line-height: 1.7; color: var(--text);
+        white-space: pre-wrap;
+    }
+
+    .code-block {
+        margin-top: 0.75rem; padding: 1rem; background: var(--pre-bg);
+        border: 1px solid var(--pre-border); font-family: var(--font-label);
+        font-size: 0.8rem; color: var(--pre-text); white-space: pre-wrap;
+        overflow-x: auto; max-height: 300px;
+    }
+
+    @media (max-width: 768px) {
+        .overview-grid { grid-template-columns: repeat(2, 1fr); }
+        .answer-details { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_attempts' %}" class="back-link">&larr; BACK TO ATTEMPTS</a>
+
+<div class="cp-header">
+    <div>
+        <h1>ATTEMPT_{{ attempt.pk }} //</h1>
+        <div style="font-family: var(--font-label); font-size: 10px; letter-spacing: 2px; color: var(--text-muted); margin-top: 0.5rem;">
+            {{ attempt.candidate.get_full_name|default:attempt.candidate.username }} ·
+            {{ attempt.assessment.title }} ·
+            {{ attempt.assessment.job.title }}
+        </div>
+    </div>
+    <div>
+        {% if attempt.is_complete %}
+        <span class="result-tag {% if attempt.passed %}tag-correct{% else %}tag-wrong{% endif %}" style="font-size: 12px; padding: 6px 16px;">
+            {% if attempt.passed %}PASSED{% else %}FAILED{% endif %}
+        </span>
+        {% else %}
+        <span class="result-tag" style="color: var(--warning); border-color: var(--warning); font-size: 12px; padding: 6px 16px;">IN PROGRESS</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Overview Stats -->
+<div class="overview-grid">
+    <div class="overview-card">
+        <div class="overview-label">[SCORE]</div>
+        <div class="overview-value">{{ attempt.score|floatformat:1|default:"—" }}/{{ attempt.max_score|floatformat:1|default:"—" }}</div>
+    </div>
+    <div class="overview-card">
+        <div class="overview-label">[PERCENTAGE]</div>
+        <div class="overview-value" style="color: {% if attempt.passed %}var(--success){% else %}var(--rosso){% endif %};">
+            {% if attempt.percentage %}{{ attempt.percentage|floatformat:1 }}%{% else %}—{% endif %}
+        </div>
+    </div>
+    <div class="overview-card">
+        <div class="overview-label">[STARTED]</div>
+        <div class="overview-value" style="font-size: 1rem;">{{ attempt.started_at|date:"M d, Y H:i" }}</div>
+    </div>
+    <div class="overview-card">
+        <div class="overview-label">[COMPLETED]</div>
+        <div class="overview-value" style="font-size: 1rem;">{{ attempt.completed_at|date:"M d, Y H:i"|default:"—" }}</div>
+    </div>
+</div>
+
+<!-- Feedback -->
+{% if attempt.feedback %}
+<div class="answer-header">[SYSTEM FEEDBACK]</div>
+<div class="ai-feedback" style="margin-bottom: 2.5rem;">{{ attempt.feedback }}</div>
+{% endif %}
+
+<!-- Answers -->
+<div class="answer-header">[ANSWER FORENSICS — {{ answers|length }} RESPONSES]</div>
+
+{% for ans in answers %}
+<div class="answer-card">
+    <span class="q-number">Q{{ forloop.counter }}</span>
+    <div class="q-type">
+        {% if ans.question.is_coding %}[CODING · {{ ans.question.language|upper }}]{% else %}[MCQ]{% endif %}
+        {% if ans.question.skill_category %}· {{ ans.question.skill_category.name|upper }}{% endif %}
+        · {{ ans.question.points }} PTS
+    </div>
+    <div class="q-text">{{ ans.question.question_text }}</div>
+
+    <div class="answer-details">
+        <div class="answer-detail-item">
+            <span class="detail-key">RESULT</span>
+            <span class="result-tag {% if ans.is_correct %}tag-correct{% else %}tag-wrong{% endif %}">
+                {% if ans.is_correct %}CORRECT{% else %}INCORRECT{% endif %}
+            </span>
+        </div>
+        <div class="answer-detail-item">
+            <span class="detail-key">POINTS EARNED</span>
+            <span class="detail-val" style="font-weight: 700;">{{ ans.points_earned|floatformat:1 }}/{{ ans.question.points }}</span>
+        </div>
+        {% if ans.question.is_mcq %}
+        <div class="answer-detail-item">
+            <span class="detail-key">SELECTED</span>
+            <span class="detail-val">{{ ans.selected_option.option_text|default:"—" }}</span>
+        </div>
+        <div class="answer-detail-item">
+            <span class="detail-key">CORRECT ANSWER</span>
+            <span class="detail-val" style="color: var(--success);">
+                {% for opt in ans.question.options.all %}{% if opt.is_correct %}{{ opt.option_text }}{% endif %}{% endfor %}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if ans.question.is_coding and ans.code_response %}
+    <div style="margin-top: 1rem;">
+        <div class="detail-key" style="margin-bottom: 0.5rem;">SUBMITTED CODE</div>
+        <div class="code-block">{{ ans.code_response }}</div>
+    </div>
+    {% endif %}
+
+    {% if ans.ai_feedback %}
+    <div style="margin-top: 1rem;">
+        <div class="detail-key" style="margin-bottom: 0.5rem;">AI EVALUATION</div>
+        <div class="ai-feedback">{{ ans.ai_feedback }}</div>
+    </div>
+    {% endif %}
+</div>
+{% empty %}
+<div style="text-align: center; padding: 3rem; border: 1px dashed var(--border); background: var(--card-bg);">
+    <span style="font-family: var(--font-label); font-size: 10px; letter-spacing: 2px; color: var(--text-muted);">[NO ANSWERS RECORDED]</span>
+</div>
+{% endfor %}
+
+<!-- Link to user profile -->
+<div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 1rem;">
+    <a href="{% url 'admin_user_detail' pk=attempt.candidate.pk %}" class="btn btn-secondary">[VIEW USER PROFILE]</a>
+    <a href="{% url 'admin_attempts' %}" class="btn btn-secondary">&larr; ALL ATTEMPTS</a>
+</div>
+{% endblock %}

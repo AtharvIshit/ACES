@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title %}USERS — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2.5rem; letter-spacing: 0.05em; }
+
+    /* Nav Strip */
+    .cp-nav {
+        display: flex;
+        gap: 0;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .cp-nav a {
+        flex: 1;
+        text-align: center;
+        padding: 1rem;
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted) !important;
+        text-decoration: none !important;
+        border-bottom: none !important;
+        border-right: 1px solid var(--border);
+        background: var(--card-bg);
+        transition: all 0.2s ease;
+    }
+    .cp-nav a:last-child { border-right: none; }
+    .cp-nav a:hover, .cp-nav a.active {
+        background: var(--rosso) !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Search Bar */
+    .search-bar {
+        display: flex;
+        gap: 0;
+        margin-bottom: 1.5rem;
+    }
+    .search-bar input {
+        flex: 1;
+        height: 48px !important;
+        border: 1px solid var(--border) !important;
+        border-right: none !important;
+        background: var(--input-bg) !important;
+        color: var(--input-text) !important;
+        padding: 0 1rem !important;
+        font-family: var(--font-label);
+        font-size: 12px;
+        letter-spacing: 1px;
+    }
+    .search-bar input:focus {
+        outline: none;
+        border-color: var(--rosso) !important;
+    }
+    .search-bar button {
+        height: 48px;
+        padding: 0 1.5rem;
+        background: var(--btn-bg);
+        color: var(--btn-text);
+        border: 1px solid var(--border);
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .search-bar button:hover {
+        background: var(--rosso);
+        border-color: var(--rosso);
+        color: #fff;
+    }
+
+    /* Filter Tabs */
+    .filter-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        overflow: hidden;
+        width: fit-content;
+    }
+    .filter-tabs a {
+        padding: 0.6rem 1.25rem;
+        font-family: var(--font-label);
+        font-size: 9px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted) !important;
+        text-decoration: none !important;
+        border-bottom: none !important;
+        border-right: 1px solid var(--border);
+        background: var(--card-bg);
+        transition: all 0.2s;
+    }
+    .filter-tabs a:last-child { border-right: none; }
+    .filter-tabs a:hover, .filter-tabs a.active {
+        background: var(--btn-bg);
+        color: var(--btn-text) !important;
+    }
+
+    /* User Row */
+    .user-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        margin-bottom: -1px;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        text-decoration: none !important;
+    }
+    .user-row:hover {
+        border-color: var(--rosso);
+        background: var(--surface-alt);
+        z-index: 1;
+        position: relative;
+    }
+    .user-row:hover::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: var(--rosso);
+    }
+    .user-name {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text);
+    }
+    .user-meta {
+        font-family: var(--font-label);
+        font-size: 9px;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-top: 3px;
+    }
+    .role-badge {
+        font-family: var(--font-label);
+        font-size: 8px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border: 1px solid;
+    }
+    .role-recruiter {
+        color: var(--rosso);
+        border-color: var(--rosso);
+        background: var(--rosso-soft);
+    }
+    .role-candidate {
+        color: var(--success);
+        border-color: var(--success);
+        background: rgba(22, 163, 74, 0.08);
+    }
+    .role-admin {
+        color: var(--warning);
+        border-color: var(--warning);
+        background: rgba(217, 119, 6, 0.08);
+    }
+    .status-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-right: 4px;
+        vertical-align: middle;
+    }
+    .status-active { background: var(--success); }
+    .status-inactive { background: var(--rosso); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-header">
+    <div>
+        <h1>USER_REGISTRY //</h1>
+    </div>
+</div>
+
+<nav class="cp-nav">
+    <a href="{% url 'admin_dashboard' %}">[OVERVIEW]</a>
+    <a href="{% url 'admin_users' %}" class="active">[USERS]</a>
+    <a href="{% url 'admin_jobs' %}">[JOBS]</a>
+    <a href="{% url 'admin_assessments' %}">[ASSESSMENTS]</a>
+    <a href="{% url 'admin_attempts' %}">[ATTEMPTS]</a>
+    <a href="{% url 'admin_proctoring' %}">[PROCTORING]</a>
+</nav>
+
+<!-- Search -->
+<form method="get" class="search-bar">
+    {% if role_filter != 'all' %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
+    <input type="text" name="q" value="{{ search }}" placeholder="SEARCH BY USERNAME, EMAIL, NAME...">
+    <button type="submit">[SEARCH]</button>
+</form>
+
+<!-- Role Filter Tabs -->
+<div class="filter-tabs">
+    <a href="{% url 'admin_users' %}{% if search %}?q={{ search }}{% endif %}" class="{% if role_filter == 'all' %}active{% endif %}">ALL</a>
+    <a href="{% url 'admin_users' %}?role=recruiter{% if search %}&q={{ search }}{% endif %}" class="{% if role_filter == 'recruiter' %}active{% endif %}">RECRUITERS</a>
+    <a href="{% url 'admin_users' %}?role=candidate{% if search %}&q={{ search }}{% endif %}" class="{% if role_filter == 'candidate' %}active{% endif %}">CANDIDATES</a>
+</div>
+
+<!-- User List -->
+{% for u in users %}
+<a href="{% url 'admin_user_detail' pk=u.pk %}" class="user-row" style="border-bottom: none !important;">
+    <div>
+        <div class="user-name">
+            <span class="status-dot {% if u.is_active %}status-active{% else %}status-inactive{% endif %}"></span>
+            {{ u.get_full_name|default:u.username }}
+            {% if u.is_superuser %}<span class="role-badge role-admin">ADMIN</span>{% endif %}
+        </div>
+        <div class="user-meta">
+            @{{ u.username }} · {{ u.email }} · JOINED {{ u.date_joined|date:"M d, Y" }}
+            {% if u.last_login %} · LAST LOGIN {{ u.last_login|date:"M d, Y H:i" }}{% endif %}
+        </div>
+    </div>
+    <div>
+        {% if u.profile %}
+        <span class="role-badge {% if u.profile.role == 'R' %}role-recruiter{% else %}role-candidate{% endif %}">
+            {{ u.profile.get_role_display }}
+        </span>
+        {% endif %}
+    </div>
+</a>
+{% empty %}
+<div style="text-align: center; padding: 3rem; border: 1px dashed var(--border); background: var(--card-bg);">
+    <span style="font-family: var(--font-label); font-size: 10px; letter-spacing: 2px; color: var(--text-muted);">[NO USERS FOUND]</span>
+</div>
+{% endfor %}
+{% endblock %}

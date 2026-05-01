@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">{{ title }}</h1>
+<p class="text-muted mb-2">Assessment: {{ assessment.title }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="card mb-2">
+        <h3>Question</h3>
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="card mb-2">
+        <h3>Answer Options</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">Check the correct option(s).</p>
+        {{ formset.management_form }}
+        {% for f in formset %}
+        <div class="form-group" style="display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+            {{ f.id }}
+            <div style="flex: 1; min-width: 200px;">
+                <label>{{ forloop.counter }}. Option</label>
+                {{ f.option_text }}
+            </div>
+            <div class="form-check" style="margin-top: 1.8rem;">
+                {{ f.is_correct }}
+                <label>Correct</label>
+            </div>
+            {{ f.order.as_hidden }}
+        </div>
+        {% endfor %}
+        {% if formset.non_form_errors %}<ul class="errorlist">{{ formset.non_form_errors }}</ul>{% endif %}
+    </div>
+    <div class="flex">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'assessment_questions' pk=assessment.pk %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

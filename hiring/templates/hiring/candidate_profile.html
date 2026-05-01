@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex" style="justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+        {% if profile.profile_picture %}
+        <div
+            style="width: 80px; height: 80px; border-radius: 0px; border: 1px solid #000000; overflow: hidden; background: #FFFFFF; flex-shrink: 0;">
+            <img src="{{ profile.profile_picture.url }}" alt="{{ candidate.username }} Picture"
+                style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        {% else %}
+        <div
+            style="width: 80px; height: 80px; border-radius: 0px; border: 1px solid #000000; overflow: hidden; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="text-muted" style="font-size: 2rem; user-select: none;">&#128100;</span>
+        </div>
+        {% endif %}
+        <div>
+            <h1 style="margin-bottom: 0.5rem; font-weight: 700;">{{ candidate.get_full_name|default:candidate.username}}
+            </h1>
+            <p class="text-muted" style="font-size: 1.125rem;">Candidate Profile</p>
+        </div>
+    </div>
+    <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+</div>
+
+<div class="card mb-4">
+    <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; font-weight: 600;">Contact & Details</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Email</p>
+            <p style="font-weight: 500;">{{ candidate.email|default:"Not provided" }}</p>
+        </div>
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Phone</p>
+            <p style="font-weight: 500;">{{ profile.phone|default:"Not provided" }}</p>
+        </div>
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Organization</p>
+            <p style="font-weight: 500;">{{ profile.organization|default:"Not provided" }}</p>
+        </div>
+        {% if profile.resume %}
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Resume</p>
+            <a href="{{ profile.resume.url }}" target="_blank" class="btn btn-sm btn-secondary"
+                style="display: inline-block;">View Resume</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if profile.bio %}
+    <div class="mt-4" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <p class="text-muted" style="margin-bottom: 0.5rem; font-size: 0.875rem;">Bio</p>
+        <p style="line-height: 1.6;">{{ profile.bio }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; font-weight: 600;">Assessment History</h2>
+
+{% for attempt in attempts %}
+<div class="card mb-3"
+    style="border: 1px solid #000000; border-left: 4px solid {% if attempt.passed %}var(--success){% else %}var(--danger){% endif %}; border-radius: 0px;">
+    <div class="flex" style="justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+        <div>
+            <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem;">{{ attempt.assessment.title }}</h3>
+            <p class="text-muted" style="font-size: 0.9rem;">
+                {{ attempt.assessment.job.title }} &middot;
+                Taken {{ attempt.started_at|date:"M d, Y" }}
+            </p>
+        </div>
+        <div style="text-align: right;">
+            <span class="badge {% if attempt.passed %}badge-success{% else %}badge-danger{% endif %}"
+                style="font-size: 1rem; padding: 0.5rem 1rem;">
+                {{ attempt.percentage|default:"0" }}% {% if attempt.passed %}Passed{% else %}Failed{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div style="background: #F5F5F5; padding: 1.25rem; border-radius: 0px; margin-top: 1rem; border: 1px solid #000000;">
+        <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted);">AI Evaluation
+            Feedback</h4>
+        <div style="line-height: 1.6; font-size: 0.95rem;">
+            {% if attempt.feedback %}
+            {{ attempt.feedback|linebreaks }}
+            {% else %}
+            <p class="text-muted" style="font-style: italic;">No feedback available for this attempt.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="card" style="text-align: center; padding: 4rem 2rem;">
+    <p class="text-muted" style="font-size: 1.125rem;">No assessment history found for your jobs.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

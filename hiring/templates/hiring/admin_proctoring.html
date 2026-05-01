@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}PROCTORING — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cp-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2.5rem; letter-spacing: 0.05em; }
+    .cp-header .system-tag {
+        font-family: var(--font-label); font-size: 10px;
+        letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted);
+    }
+    .cp-header .live-dot {
+        display: inline-block; width: 8px; height: 8px;
+        background: var(--rosso); border-radius: 50%;
+        animation: cp-blink 2s ease-in-out infinite;
+        margin-right: 6px; vertical-align: middle;
+    }
+    @keyframes cp-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .cp-nav {
+        display: flex; gap: 0; margin-bottom: 2rem;
+        border: 1px solid var(--border); overflow: hidden;
+    }
+    .cp-nav a {
+        flex: 1; text-align: center; padding: 1rem;
+        font-family: var(--font-label); font-size: 10px; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--text-muted) !important;
+        text-decoration: none !important; border-bottom: none !important;
+        border-right: 1px solid var(--border); background: var(--card-bg); transition: all 0.2s ease;
+    }
+    .cp-nav a:last-child { border-right: none; }
+    .cp-nav a:hover, .cp-nav a.active { background: var(--rosso) !important; color: #FFFFFF !important; }
+
+    #proctoring-mount {
+        min-height: 400px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        padding: 2rem;
+        position: relative;
+    }
+    .mount-placeholder {
+        text-align: center; padding: 4rem;
+        font-family: var(--font-label); font-size: 10px;
+        letter-spacing: 2px; color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-header">
+    <div>
+        <h1>PROCTORING_LOG //</h1>
+        <div class="system-tag" style="margin-top: 0.5rem;">
+            <span class="live-dot"></span>EVIDENCE TAPE — INTEGRITY MONITOR
+        </div>
+    </div>
+</div>
+
+<nav class="cp-nav">
+    <a href="{% url 'admin_dashboard' %}">[OVERVIEW]</a>
+    <a href="{% url 'admin_users' %}">[USERS]</a>
+    <a href="{% url 'admin_jobs' %}">[JOBS]</a>
+    <a href="{% url 'admin_assessments' %}">[ASSESSMENTS]</a>
+    <a href="{% url 'admin_attempts' %}">[ATTEMPTS]</a>
+    <a href="{% url 'admin_proctoring' %}" class="active">[PROCTORING]</a>
+</nav>
+
+<!-- React component mount point -->
+<div id="proctoring-mount">
+    <div class="mount-placeholder" id="mount-placeholder">
+        [INITIALIZING EVIDENCE VIEWER...]
+    </div>
+</div>
+
+<!-- Load sql.js WASM for Client-side Database -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<!-- Load Tailwind CDN for the React component's utility classes -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Load React Bundle (IIFE) -->
+<script src="{% static 'hiring/js/proctoring/proctoring.bundle.js' %}"></script>
+<script>
+    if (window.mountBrutalistAdminQuery) {
+        document.getElementById('mount-placeholder').style.display = 'none';
+        window.mountBrutalistAdminQuery('proctoring-mount');
+    } else {
+        document.getElementById('mount-placeholder').textContent = '[PROCTORING MODULE NOT AVAILABLE — BUNDLE NOT LOADED]';
+    }
+</script>
+{% endblock %}

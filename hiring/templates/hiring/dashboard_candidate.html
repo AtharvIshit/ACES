@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <h1>Candidate Dashboard</h1>
+    <a href="{% url 'profile' %}" class="btn btn-secondary">Edit Profile</a>
+</div>
+
+<style>
+    .brutalist-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid var(--border);
+    }
+    .brutalist-tab {
+        padding: 0.75rem 1.75rem;
+        font-family: var(--font-label);
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-muted);
+        cursor: pointer;
+        border: 2px solid transparent;
+        border-bottom: none;
+        position: relative;
+        top: 2px;
+        transition: color 0.2s ease, border-color 0.2s ease;
+    }
+    .brutalist-tab:hover {
+        color: var(--text);
+    }
+    .brutalist-tab.active {
+        color: var(--text);
+        border-color: var(--border);
+        background: var(--bg);
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+</style>
+
+<div class="brutalist-tabs">
+    <div class="brutalist-tab active" data-target="available-tab">Available Assessments</div>
+    <div class="brutalist-tab" data-target="attempts-tab">Attempts</div>
+</div>
+
+<div id="available-tab" class="tab-content active">
+    {% for a in assessments %}
+    <div class="card brutalist-border brutalist-corners" style="padding: 2rem; background: var(--card-bg); border-radius: 0px !important; box-shadow: none !important;">
+        <div class="flex" style="justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <h3>{{ a.title }}</h3>
+                <p class="text-muted">{{ a.job.title }} &middot; {{ a.duration_minutes }} min &middot; {{ a.total_questions }} questions</p>
+            </div>
+            <a href="{% url 'assessment_start' pk=a.pk %}" class="btn btn-primary">Start Assessment</a>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No assessments available at the moment.</p>
+    {% endfor %}
+</div>
+
+<div id="attempts-tab" class="tab-content">
+    {% for att in attempts %}
+    <div class="card brutalist-border brutalist-corners" style="padding: 2rem; background: var(--card-bg); border-radius: 0px !important; box-shadow: none !important;">
+        <div class="flex" style="justify-content: space-between; align-items: center;">
+            <div>
+                <strong>{{ att.assessment.title }}</strong> ({{ att.assessment.job.title }})
+                <p class="text-muted" style="font-size: 0.9rem;">Completed {{ att.completed_at|date:"M d, Y" }}</p>
+            </div>
+            <div class="flex" style="align-items: center; gap: 1rem;">
+                <span class="badge {% if att.passed %}badge-success{% else %}badge-danger{% endif %}">
+                    {{ att.percentage }}% {% if att.passed %}Passed{% else %}Not Passed{% endif %}
+                </span>
+                <a href="{% url 'attempt_result' pk=att.pk %}" class="btn btn-secondary btn-sm">View Results</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No attempts yet.</p>
+    {% endfor %}
+</div>
+
+<script>
+    document.querySelectorAll('.brutalist-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.brutalist-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.target).classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

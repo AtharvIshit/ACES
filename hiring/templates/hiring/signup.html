@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<!-- Dot-Matrix Font for Brutalist Aesthetic -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0;
+        }
+    }
+
+    .system-header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .system-title-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+        .system-header-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .system-clock {
+            align-self: flex-start;
+        }
+    }
+
+    .main-form-container {
+        max-width: 480px;
+        margin: 4rem auto;
+        position: relative;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-form-container card brutalist-corners">
+    <!-- Layering label -->
+    <div
+        style="position: absolute; top: -10px; left: -10px; background: #FFFFFF; border: 1px solid #000000; padding: 2px 8px; font-family: var(--font-display); font-size: 10px; letter-spacing: 0.1em; color: #000000; z-index: 10;">
+        INPUT_REQUIRED
+    </div>
+
+    <!-- Header & Title Area -->
+    <div style="margin-bottom: 2.5rem;">
+        <!-- Technical Breadcrumbs -->
+        <div
+            style="font-family: var(--font-display); font-size: 11px; color: #000000; letter-spacing: 0.1em; margin-bottom: 0.5rem; text-transform: uppercase;">
+            ACES // AUTH_MODULE // NEW_USER_REGISTRATION
+        </div>
+
+        <!-- Title Row with Dot-Matrix & System Clock -->
+        <div class="system-header-container">
+            <!-- Title and Status Indicator -->
+            <div class="system-title-wrapper">
+                <h1
+                    style="font-family: 'JetBrains Mono', var(--font-display); font-size: 1.5rem; margin: 0; letter-spacing: 0.1em; color: #000000;">
+                    CREATE_ACCOUNT_v1.0
+                </h1>
+                <div style="display: flex; align-items: center; gap: 4px; padding-bottom: 2px;">
+                    <div
+                        style="width: 6px; height: 6px; background-color: #FF0037; border-radius: 50%; box-shadow: 0 0 4px #FF0037; animation: blink 1s infinite;">
+                    </div>
+                    <span
+                        style="font-family: var(--font-display); font-size: 10px; color: #FF0037; letter-spacing: 0.05em;">[SYSTEM:
+                        LIVE]</span>
+                </div>
+            </div>
+
+            <!-- System Clock -->
+            <div id="system-clock" class="system-clock"
+                style="font-family: var(--font-display); font-size: 14px; color: #000000; letter-spacing: 0.1em;">
+                00:00:00
+            </div>
+        </div>
+
+        <!-- The "Divider" Line -->
+        <div style="margin-top: 0.75rem; border-bottom: 1px solid var(--border); position: relative;">
+            <div
+                style="position: absolute; right: 0; bottom: -8px; font-family: var(--font-display); font-size: 14px; color: #000000; line-height: 1; background: #FFFFFF; padding-left: 4px;">
+                +
+            </div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group" style="margin-bottom: 2rem;">
+            <label for="{{ field.id_for_label }}"
+                style="font-family: 'JetBrains Mono', monospace; color: #000000; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block;">
+                [FIELD_TYPE: {{ field.label|upper }}]
+            </label>
+
+            <div style="position: relative;">
+                {% if field.errors %}
+                <div class="control-wrapper error">
+                    {{ field }}
+                </div>
+                {% else %}
+                <div class="control-wrapper">
+                    {{ field }}
+                </div>
+                {% endif %}
+
+                {% if field.errors %}
+                <ul class="errorlist"
+                    style="position: absolute; bottom: -22px; right: 0; font-family: var(--font-display); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; margin: 0; color: #FF0037;">
+                    {% for e in field.errors %}
+                    <li>{{ e }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn"
+            style="width: 100%; height: 52px; font-size: 16px; letter-spacing: 0.1em;">SUBMIT_DATA</button>
+    </form>
+    <p class="mt-4 text-muted"
+        style="font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">
+        [SYS.LOG] Already have an account? <a href="{% url 'login' %}">AUTH_LOGIN</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('system-clock').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock(); // Initial call
+    // Brutalist Form Field Interactive Utilities
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputs = document.querySelectorAll('.form-control');
+
+        inputs.forEach(input => {
+            // Check initial state
+            if (input.value.trim() !== '') {
+                input.parentElement.classList.add('has-value');
+            }
+
+            // Handle focus dynamics
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('is-focused');
+
+                // Dim the red error border temporarily on focus if it exists
+                if (input.parentElement.classList.contains('error')) {
+                    input.parentElement.classList.remove('error');
+                    input.parentElement.classList.add('error-suppressed');
+                }
+            });
+
+            // Handle blur dynamics
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('is-focused');
+                if (input.value.trim() !== '') {
+                    input.parentElement.classList.add('has-value');
+                } else {
+                    input.parentElement.classList.remove('has-value');
+                }
+
+                // Reinstate error styling if field is still invalid
+                if (input.parentElement.classList.contains('error-suppressed')) {
+                    input.parentElement.classList.remove('error-suppressed');
+                    input.parentElement.classList.add('error');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

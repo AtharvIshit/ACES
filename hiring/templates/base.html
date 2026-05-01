@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ACES.{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Theme initialization: runs before paint to prevent flash -->
+    <script>
+        (function() {
+            function getEffectiveTheme(pref) {
+                if (pref === 'dark') return 'dark';
+                if (pref === 'light') return 'light';
+                // auto: use system preference
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            var stored = localStorage.getItem('aces-theme') || 'auto';
+            document.documentElement.setAttribute('data-theme', getEffectiveTheme(stored));
+            document.documentElement.setAttribute('data-theme-pref', stored);
+        })();
+    </script>
+
+    <style>
+        :root,
+        [data-theme="light"] {
+            /* "Nothing" Aesthetic Palette — Light */
+            --rosso: #FF0037;
+            --rosso-hover: #D4002D;
+            --rosso-soft: rgba(255, 0, 55, 0.15);
+            --accent: #FF0037;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #FF0037;
+
+            --border: #000000;
+            --border-subtle: #D1D1D1;
+            --surface: #FFFFFF;
+            --surface-alt: #F5F5F5;
+            --bg: #F5F5F5;
+            --text: #000000;
+            --text-muted: #666666;
+            --dot-grid: #D1D1D1;
+
+            --input-bg: #FFFFFF;
+            --input-border: #000000;
+            --input-text: #000000;
+            --input-focus-bg: #FFFFFF;
+
+            --nav-bg: #FFFFFF;
+            --nav-text: #000000;
+            --nav-border: #000000;
+
+            --btn-bg: #000000;
+            --btn-text: #FFFFFF;
+            --btn-border: #000000;
+            --btn-secondary-bg: #FFFFFF;
+            --btn-secondary-text: #000000;
+
+            --card-bg: #FFFFFF;
+            --card-border: #000000;
+
+            --footer-bg: #FFFFFF;
+            --footer-text: #000000;
+            --footer-border: #000000;
+
+            --ticker-bg: #000000;
+            --ticker-text: #FFFFFF;
+
+            --pre-bg: #F5F5F5;
+            --pre-text: #000000;
+            --pre-border: #000000;
+
+            --badge-border: #000000;
+            --msg-success-bg: rgba(22, 163, 74, 0.1);
+            --msg-success-border: rgba(22, 163, 74, 1);
+            --msg-error-bg: rgba(255, 0, 55, 0.1);
+            --msg-error-border: rgba(255, 0, 55, 1);
+
+            --font-body: "Inter", sans-serif;
+            --font-label: "JetBrains Mono", monospace;
+            --font-display: "Space Grotesk", sans-serif;
+        }
+
+        [data-theme="dark"] {
+            /* "Nothing" Aesthetic Palette — Dark */
+            --rosso: #FF0037;
+            --rosso-hover: #FF335F;
+            --rosso-soft: rgba(255, 0, 55, 0.2);
+            --accent: #FF0037;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #FF0037;
+
+            --border: #333333;
+            --border-subtle: #2A2A2A;
+            --surface: #1A1A1A;
+            --surface-alt: #111111;
+            --bg: #0D0D0D;
+            --text: #E8E8E8;
+            --text-muted: #888888;
+            --dot-grid: #1F1F1F;
+
+            --input-bg: #1A1A1A;
+            --input-border: #333333;
+            --input-text: #E8E8E8;
+            --input-focus-bg: #1F1F1F;
+
+            --nav-bg: #111111;
+            --nav-text: #E8E8E8;
+            --nav-border: #333333;
+
+            --btn-bg: #E8E8E8;
+            --btn-text: #0D0D0D;
+            --btn-border: #E8E8E8;
+            --btn-secondary-bg: #1A1A1A;
+            --btn-secondary-text: #E8E8E8;
+
+            --card-bg: #1A1A1A;
+            --card-border: #333333;
+
+            --footer-bg: #111111;
+            --footer-text: #888888;
+            --footer-border: #333333;
+
+            --ticker-bg: #1A1A1A;
+            --ticker-text: #888888;
+
+            --pre-bg: #111111;
+            --pre-text: #E8E8E8;
+            --pre-border: #333333;
+
+            --badge-border: #444444;
+            --msg-success-bg: rgba(34, 197, 94, 0.1);
+            --msg-success-border: rgba(34, 197, 94, 0.6);
+            --msg-error-bg: rgba(255, 0, 55, 0.1);
+            --msg-error-border: rgba(255, 0, 55, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body) !important;
+            background-color: var(--bg) !important;
+            background-image: radial-gradient(var(--dot-grid) 1px, transparent 1px) !important;
+            background-size: 16px 16px !important;
+            color: var(--text) !important;
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        form p,
+        .form-group {
+            margin-bottom: 24px !important;
+            position: relative;
+        }
+
+        form label {
+            display: block !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 10px !important;
+            color: var(--text) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+            margin-bottom: 10px !important;
+        }
+
+        form input[type="text"],
+        form input[type="email"],
+        form input[type="password"],
+        form input[type="number"],
+        form select,
+        form textarea,
+        .form-control {
+            width: 100% !important;
+            height: 60px !important;
+            background-color: var(--input-bg) !important;
+            border: 1px solid var(--input-border) !important;
+            border-radius: 0px !important;
+            color: var(--input-text) !important;
+            padding: 0 18px !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 16px !important;
+            transition: all 0.2s ease-in-out !important;
+            box-sizing: border-box !important;
+            box-shadow: none !important;
+        }
+
+        form textarea,
+        textarea.form-control {
+            height: auto !important;
+            padding: 14px 18px !important;
+        }
+
+        form input:focus,
+        form select:focus,
+        form textarea:focus,
+        .form-control:focus {
+            border-color: var(--rosso) !important;
+            background-color: var(--input-focus-bg) !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        .dot-matrix {
+            font-family: var(--font-display) !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .label-font {
+            font-family: var(--font-label) !important;
+            font-size: 10px !important;
+            letter-spacing: 2px !important;
+            text-transform: uppercase !important;
+        }
+
+        .brutalist-border {
+            border: 1px solid var(--card-border) !important;
+            border-radius: 0px !important;
+        }
+
+        .brutalist-corners {
+            border-radius: 4px !important;
+        }
+
+        .glass-panel {
+            background: var(--surface) !important;
+            border: 1px solid var(--card-border) !important;
+        }
+
+        .navbar {
+            padding: 0 2.5rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--nav-bg) !important;
+            border-bottom: 1px solid var(--nav-border) !important;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .navbar a {
+            color: var(--nav-text) !important;
+            text-decoration: none;
+            font-weight: 500;
+            font-family: var(--font-label);
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .navbar a:hover {
+            color: var(--rosso) !important;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .brand {
+            font-family: var(--font-display);
+            font-size: 28px;
+            letter-spacing: 0.05em;
+            color: var(--text) !important;
+            display: inline-flex;
+            align-items: center;
+            text-transform: uppercase;
+        }
+
+        /* ---- Theme Toggle ---- */
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            overflow: hidden;
+            height: 32px;
+        }
+
+        .theme-switcher button {
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--border);
+            color: var(--text-muted);
+            font-family: var(--font-label);
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 0 10px;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .theme-switcher button:last-child {
+            border-right: none;
+        }
+
+        .theme-switcher button:hover {
+            color: var(--text);
+            background: var(--surface-alt);
+        }
+
+        .theme-switcher button.active {
+            background: var(--rosso);
+            color: #FFFFFF;
+        }
+
+        .theme-switcher button svg {
+            width: 12px;
+            height: 12px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .container-wide {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 99px !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-weight: bold;
+            font-size: 12px !important;
+            height: 48px;
+            padding: 0 1.5rem;
+            cursor: pointer;
+            border: 1px solid var(--btn-border) !important;
+            text-decoration: none;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px !important;
+            background: var(--btn-bg) !important;
+            color: var(--btn-text) !important;
+            box-shadow: none !important;
+        }
+
+        .btn:hover {
+            background: var(--rosso) !important;
+            border-color: var(--rosso) !important;
+            color: #FFFFFF !important;
+        }
+        
+        .btn-secondary {
+            background: var(--btn-secondary-bg) !important;
+            color: var(--btn-secondary-text) !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .btn-secondary:hover {
+            background: var(--rosso) !important;
+            border-color: var(--rosso) !important;
+            color: #FFFFFF !important;
+        }
+
+        .btn-danger {
+            background: var(--danger) !important;
+            border-color: var(--danger) !important;
+            color: #FFFFFF !important;
+        }
+
+        .btn-danger:hover {
+            background: var(--rosso-hover) !important;
+            border-color: var(--rosso-hover) !important;
+        }
+
+        .btn-sm {
+            height: 36px;
+            font-size: 10px !important;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: var(--card-bg) !important;
+            border-radius: 0px !important;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--card-border) !important;
+            box-shadow: none !important;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display) !important;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            color: var(--text) !important;
+            margin: 0px !important;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+            font-size: 0.9375rem;
+            font-family: var(--font-body);
+        }
+
+        .messages {
+            margin: 0 2rem 1.5rem;
+        }
+
+        .message {
+            padding: 0.875rem 1.25rem;
+            border-radius: 0px !important;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+            font-family: var(--font-label);
+            border: 1px solid var(--card-border) !important;
+        }
+
+        .message.success {
+            background: var(--msg-success-bg);
+            color: var(--success);
+            border-color: var(--msg-success-border) !important;
+        }
+
+        .message.error {
+            background: var(--msg-error-bg);
+            color: var(--danger);
+            border-color: var(--msg-error-border) !important;
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0.75rem 0;
+        }
+
+        .form-check input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--rosso) !important;
+            background: var(--input-bg) !important;
+            border: 1px solid var(--input-border) !important;
+            border-radius: 0px !important;
+        }
+
+        ul.errorlist {
+            color: var(--danger);
+            font-size: 0.875rem;
+            margin-top: 0.35rem;
+            font-family: var(--font-label);
+            list-style: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            border-radius: 0px !important;
+            font-size: 0.8rem;
+            font-family: var(--font-display) !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--badge-border) !important;
+        }
+
+        .badge-success {
+            color: var(--success);
+            border-color: var(--success) !important;
+            background: var(--msg-success-bg);
+        }
+
+        .badge-danger {
+            color: var(--danger);
+            border-color: var(--danger) !important;
+            background: var(--msg-error-bg);
+        }
+
+        .badge-neutral {
+            color: var(--text-muted);
+            border-color: var(--border) !important;
+        }
+
+        .badge-primary {
+            color: #FFFFFF;
+            background: var(--rosso);
+            border-color: var(--rosso) !important;
+        }
+
+        .flex {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1.5rem; }
+        .mb-2 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 3rem; }
+
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--footer-text) !important;
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace !important;
+            letter-spacing: 2px;
+            border-top: 1px solid var(--footer-border) !important;
+            text-transform: uppercase;
+            background: var(--footer-bg) !important;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        #system-log-ticker {
+            background: var(--ticker-bg);
+            color: var(--ticker-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            padding: 8px 16px;
+            border-top: 1px solid var(--border);
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace !important;
+            white-space: pre-wrap;
+            font-size: 0.9375rem;
+            background: var(--pre-bg) !important;
+            border: 1px solid var(--pre-border) !important;
+            padding: 1rem;
+            border-radius: 0px !important;
+            color: var(--pre-text) !important;
+        }
+
+        main a:not(.btn) {
+            color: var(--text) !important;
+            text-decoration: none;
+            border-bottom: 1px solid var(--rosso);
+            transition: color 0.2s ease;
+        }
+
+        main a:not(.btn):hover {
+            color: var(--rosso) !important;
+        }
+
+        /* Smooth transitions for theme switching */
+        .card, .navbar, footer, #system-log-ticker, .btn, .btn-secondary, pre, .badge, .message {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="{% url 'home' %}" class="brand">ACES.</a>
+        <div class="nav-links">
+            <!-- 3-way theme toggle -->
+            <div class="theme-switcher" id="theme-switcher">
+                <button data-theme-val="light" title="Light mode" aria-label="Light mode">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+                <button data-theme-val="auto" title="Auto (system)" aria-label="Auto mode">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </button>
+                <button data-theme-val="dark" title="Dark mode" aria-label="Dark mode">
+                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+
+            {% if user.is_authenticated %}
+            {% if user.is_superuser %}
+            <a href="{% url 'admin_dashboard' %}" style="color: var(--rosso) !important;">Control</a>
+            {% else %}
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            {% endif %}
+            <a href="{% url 'profile' %}" style="display: flex; align-items: center; gap: 0.5rem;">
+                Profile
+                {% if user.profile.profile_picture %}
+                <img src="{{ user.profile.profile_picture.url }}" alt="Avatar"
+                    style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--rosso); object-fit: cover;">
+                {% endif %}
+            </a>
+            <a href="{% url 'logout' %}">Logout</a>
+            {% else %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'signup' %}">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="{% block container_class %}container{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+
+
+    <div id="system-log-ticker">
+        <span>> SYSTEM_STATUS: STABLE</span>
+        <span>LATENCY: 14MS</span>
+        <span>ENCRYPTION: AES-256</span>
+    </div>
+
+    <footer>
+        ACES. &middot; Entry Level Hiring
+    </footer>
+
+    <script>
+    (function() {
+        var switcher = document.getElementById('theme-switcher');
+        if (!switcher) return;
+
+        function getEffectiveTheme(pref) {
+            if (pref === 'dark') return 'dark';
+            if (pref === 'light') return 'light';
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function applyTheme(pref) {
+            var effective = getEffectiveTheme(pref);
+            document.documentElement.setAttribute('data-theme', effective);
+            document.documentElement.setAttribute('data-theme-pref', pref);
+            localStorage.setItem('aces-theme', pref);
+            updateButtons(pref);
+        }
+
+        function updateButtons(pref) {
+            var btns = switcher.querySelectorAll('button');
+            btns.forEach(function(btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-theme-val') === pref);
+            });
+        }
+
+        // Initialize active state
+        var current = localStorage.getItem('aces-theme') || 'auto';
+        updateButtons(current);
+
+        // Click handlers
+        switcher.addEventListener('click', function(e) {
+            var btn = e.target.closest('button');
+            if (!btn) return;
+            var val = btn.getAttribute('data-theme-val');
+            if (val) applyTheme(val);
+        });
+
+        // Listen for system theme changes (for auto mode)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+            var pref = localStorage.getItem('aces-theme') || 'auto';
+            if (pref === 'auto') {
+                applyTheme('auto');
+            }
+        });
+    })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

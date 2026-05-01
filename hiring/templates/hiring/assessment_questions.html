@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
+    <h1>{{ assessment.title }} — Questions</h1>
+    <div class="flex" style="gap: 0.5rem;">
+        <a href="{% url 'questions_generate_ai' pk=assessment.pk %}" class="btn btn-secondary">Generate with AI</a>
+        <a href="{% url 'question_add' pk=assessment.pk %}" class="btn btn-primary">Add Question</a>
+    </div>
+</div>
+<p class="text-muted">{{ assessment.job.title }} &middot; {{ assessment.total_questions }} questions</p>
+
+{% for q in questions %}
+<div class="card" {% if q.is_coding %}style="border-left: 3px solid var(--primary);"{% endif %}>
+    <div class="flex" style="justify-content: space-between;">
+        <div style="flex: 1;">
+            <div class="flex" style="gap: 0.5rem; align-items: center; margin-bottom: 0.25rem;">
+                <strong>Q{{ forloop.counter }}.</strong>
+                {% if q.is_coding %}
+                <span class="badge badge-primary" style="background: var(--primary); color: #fff; font-size: 0.7rem;">CODING</span>
+                <span class="badge badge-neutral" style="font-size: 0.7rem;">{{ q.language|upper }}</span>
+                {% else %}
+                <span class="badge badge-neutral" style="font-size: 0.7rem;">MCQ</span>
+                {% endif %}
+                {% if q.skill_category %}<span class="badge badge-neutral">{{ q.skill_category.name }}</span>{% endif %}
+            </div>
+            <p>{{ q.question_text }}</p>
+            <p class="text-muted" style="margin-top: 0.5rem;">{{ q.points }} pt(s)</p>
+
+            {% if q.is_mcq %}
+            <ul style="margin: 0.5rem 0 0 1.5rem;">
+                {% for opt in q.options.all %}
+                <li{% if opt.is_correct %} style="color: var(--success);"{% endif %}>{{ opt.option_text }}{% if opt.is_correct %} ✓{% endif %}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if q.is_coding %}
+            {% if q.coding_instructions %}
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; white-space: pre-wrap; color: var(--text-muted);">{{ q.coding_instructions|truncatewords:40 }}</p>
+            {% endif %}
+            {% if q.starter_code %}
+            <pre style="background: #1a1a2e; color: #e0e0e0; padding: 0.75rem; border-radius: 4px; font-size: 0.8rem; margin-top: 0.5rem; overflow-x: auto;"><code>{{ q.starter_code }}</code></pre>
+            {% endif %}
+            <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">{{ q.test_cases.count }} test case(s)</p>
+            {% endif %}
+        </div>
+        <div class="flex" style="gap: 0.5rem; align-items: flex-start;">
+            <a href="{% url 'question_edit' pk=q.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'question_delete' pk=q.pk %}" style="display:inline;" onsubmit="return confirm('Delete this question?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p class="text-muted">No questions yet. <a href="{% url 'questions_generate_ai' pk=assessment.pk %}">Generate with AI</a> or <a href="{% url 'question_add' pk=assessment.pk %}">add manually</a>.</p>
+{% endfor %}
+
+<a href="{% url 'assessment_detail' pk=assessment.pk %}" class="btn btn-secondary mt-2">Back to Assessment</a>
+{% endblock %}

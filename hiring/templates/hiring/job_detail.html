@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1>{{ job.title }}</h1>
+    <div class="flex" style="gap: 0.5rem;">
+        <a href="{% url 'job_edit' pk=job.pk %}" class="btn btn-secondary">Edit Job</a>
+        <form method="post" action="{% url 'job_delete' pk=job.pk %}" style="display:inline;" onsubmit="return confirm('Delete this job and ALL its assessments? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete Job</button>
+        </form>
+    </div>
+</div>
+<p class="text-muted">{{ job.department }} {% if job.location %} &middot; {{ job.location }}{% endif %}</p>
+<div class="card mb-2">
+    <h3>Description</h3>
+    <pre style="background: transparent; padding: 0;">{{ job.description }}</pre>
+</div>
+
+<h2 style="margin: 2rem 0 1rem;">Assessments</h2>
+{% for a in job.assessments.all %}
+<div class="card">
+    <div class="flex" style="justify-content: space-between; align-items: center;">
+        <div>
+            <h3><a href="{% url 'assessment_detail' pk=a.pk %}" style="color: inherit; text-decoration: none;">{{ a.title }}</a></h3>
+            <p class="text-muted">{{ a.total_questions }} questions &middot; {{ a.duration_minutes }} min &middot; Passing: {{ a.passing_score }}%</p>
+        </div>
+        <div class="flex">
+            <a href="{% url 'attempt_list' assessment_pk=a.pk %}" class="btn btn-secondary btn-sm">View Attempts</a>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p class="text-muted">No assessments yet.</p>
+{% endfor %}
+<a href="{% url 'assessment_create' pk=job.pk %}" class="btn btn-primary mt-2">Create Assessment</a>
+{% endblock %}

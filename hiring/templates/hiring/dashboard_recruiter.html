@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">Recruiter Dashboard</h1>
+<div class="flex" style="margin-bottom: 1.5rem;">
+    <a href="{% url 'job_create' %}" class="btn btn-primary">Post New Job</a>
+    <a href="{% url 'job_list' %}" class="btn btn-secondary">View All Jobs</a>
+</div>
+
+{% for job in jobs %}
+<div class="card brutalist-border brutalist-corners" style="padding: 2rem; background: var(--card-bg); border-radius: 0px !important; box-shadow: none !important;">
+    <div class="flex" style="justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h2><a href="{% url 'job_detail' pk=job.pk %}" style="color: inherit; text-decoration: none;">{{ job.title }}</a></h2>
+            <p class="text-muted">{{ job.department }} {% if job.location %} &middot; {{ job.location }}{% endif %}</p>
+            <p style="font-size: 0.95rem; margin-top: 0.5rem;">{{ job.description|truncatewords:30 }}</p>
+        </div>
+        <div class="flex">
+            <a href="{% url 'job_edit' pk=job.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <a href="{% url 'assessment_create' pk=job.pk %}" class="btn btn-primary btn-sm">Add Assessment</a>
+        </div>
+    </div>
+    {% if job.assessments.exists %}
+    <div class="mt-2">
+        <strong>Assessments:</strong>
+        {% for a in job.assessments.all %}
+        <a href="{% url 'assessment_detail' pk=a.pk %}" class="badge badge-neutral" style="margin-right: 0.5rem;">{{ a.title }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% empty %}
+<p class="text-muted">No jobs yet. <a href="{% url 'job_create' %}">Post your first job</a>.</p>
+{% endfor %}
+{% endblock %}

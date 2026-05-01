@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">Generate Questions with AI</h1>
+<p class="text-muted mb-2">{{ assessment.title }} — {{ assessment.job.title }}</p>
+
+{% if not generated %}
+<form method="post">
+    {% csrf_token %}
+    <div class="card">
+        <h3>Generate questions</h3>
+
+        <div class="form-group">
+            <label for="question_type">Question type</label>
+            <select name="question_type" id="question_type" class="form-control" onchange="toggleLanguage()">
+                <option value="mcq">Multiple Choice (MCQ)</option>
+                <option value="coding">Coding</option>
+                <option value="mixed">Mixed (MCQ + Coding)</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="language-group" style="display: none;">
+            <label for="language">Programming language</label>
+            <select name="language" id="language" class="form-control">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+                <option value="sql">SQL</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="num_questions">Number of questions (1–10)</label>
+            <input type="number" name="num_questions" id="num_questions" class="form-control" value="5" min="1" max="10">
+        </div>
+        <div class="form-group">
+            <label for="topics">Topics or skills (optional)</label>
+            <input type="text" name="topics" id="topics" class="form-control" placeholder="e.g., Python basics, SQL, problem solving">
+        </div>
+        <button type="submit" class="btn btn-primary">Generate with AI</button>
+    </div>
+</form>
+
+<script>
+function toggleLanguage() {
+    var type = document.getElementById('question_type').value;
+    document.getElementById('language-group').style.display = (type === 'coding' || type === 'mixed') ? 'block' : 'none';
+}
+</script>
+
+{% else %}
+    {% if generated.0.error %}
+    <div class="card" style="border-color: var(--danger);">
+        <p style="color: var(--danger);">{{ generated.0.error }}</p>
+        <a href="{% url 'questions_generate_ai' pk=assessment.pk %}" class="btn btn-secondary">Try again</a>
+    </div>
+    {% else %}
+    <form method="post" id="add-form">
+        {% csrf_token %}
+        <input type="hidden" name="add_questions" value="1">
+        <input type="hidden" name="generated_questions" id="generated_questions" value="">
+        <script id="questions-data" type="application/json">{{ generated_json|safe }}</script>
+        <div class="card mb-2">
+            <h3>Generated questions</h3>
+            <p class="text-muted">Review the questions below. Click "Add all to assessment" to save them.</p>
+
+            <div id="questions-list">
+                <!-- MCQ Questions -->
+                {% for q in mcq_questions %}
+                <div class="card" style="margin-bottom: 1rem; background: var(--bg);">
+                    <div class="flex" style="gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+                        <span class="badge badge-neutral">MCQ</span>
+                        <strong>Q{{ forloop.counter }}.</strong>
+                    </div>
+                    <p>{{ q.question_text }}</p>
+                    <ul style="margin: 0.5rem 0 0 1.5rem;">
+                        {% for opt in q.options %}
+                        <li{% if forloop.counter0 == q.correct_index %} style="color: var(--success);"{% endif %}>
+                            {{ opt }}{% if forloop.counter0 == q.correct_index %} ✓{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+
+                <!-- Coding Questions -->
+                {% for q in coding_questions %}
+                <div class="card" style="margin-bottom: 1rem; background: var(--bg); border-left: 3px solid var(--primary);">
+                    <div class="flex" style="gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+                        <span class="badge badge-primary" style="background: var(--primary); color: #fff;">CODING</span>
+                        <span class="badge badge-neutral">{{ q.language|upper }}</span>
+                    </div>
+                    <p><strong>{{ q.question_text }}</strong></p>
+                    <p style="margin-top: 0.5rem; white-space: pre-wrap; font-size: 0.95rem;">{{ q.coding_instructions }}</p>
+
+                    {% if q.starter_code %}
+                    <div style="margin-top: 0.75rem;">
+                        <label class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Starter Code</label>
+                        <pre style="background: #1a1a2e; color: #e0e0e0; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.25rem;"><code>{{ q.starter_code }}</code></pre>
+                    </div>
+                    {% endif %}
+
+                    {% if q.test_cases %}
+                    <div style="margin-top: 0.75rem;">
+                        <label class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Test Cases</label>
+                        {% for tc in q.test_cases %}
+                        {% if not tc.is_hidden %}
+                        <div style="background: rgba(0,0,0,0.05); padding: 0.5rem 0.75rem; margin-top: 0.25rem; border-radius: 4px; font-size: 0.85rem;">
+                            <span class="text-muted">Input:</span> <code>{{ tc.input }}</code>
+                            &nbsp;→&nbsp;
+                            <span class="text-muted">Expected:</span> <code>{{ tc.expected_output }}</code>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Add all to assessment</button>
+        </div>
+    </form>
+    <a href="{% url 'assessment_questions' pk=assessment.pk %}" class="btn btn-secondary">Back to questions</a>
+    <a href="{% url 'questions_generate_ai' pk=assessment.pk %}" class="btn btn-secondary">Generate more</a>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var data = document.getElementById('questions-data').textContent;
+        document.getElementById('generated_questions').value = data;
+    });
+    </script>
+    {% endif %}
+{% endif %}
+
+<a href="{% url 'assessment_questions' pk=assessment.pk %}" class="btn btn-secondary mt-2">Back to questions</a>
+{% endblock %}

@@ -1,0 +1,651 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ====== RECORDING LIGHT ====== */
+    .rec-indicator {
+        position: absolute;
+        top: 80px;
+        left: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        z-index: 40;
+        pointer-events: none;
+    }
+
+    .rec-square {
+        width: 3rem;
+        height: 3rem;
+        background-color: var(--rosso);
+        box-shadow: 0 0 15px var(--rosso);
+        animation: rec-blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes rec-blink {
+        0%, 100% { opacity: 1; box-shadow: 0 0 15px var(--rosso); }
+        50% { opacity: 0.3; box-shadow: 0 0 5px var(--rosso); }
+    }
+
+    /* ====== BACKGROUND CANVAS ====== */
+    #grid-canvas {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    /* ====== HERO ====== */
+    .hero-section {
+        position: relative;
+        text-align: center;
+        padding: 7rem 1rem 5rem;
+        overflow: hidden;
+    }
+
+    /* Floating system log lines — page-wide */
+    .page-bg-logs {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.04;
+    }
+
+    .page-bg-logs .log-line {
+        position: absolute;
+        white-space: nowrap;
+        font-family: var(--font-label);
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text);
+        animation: log-scroll 25s linear infinite;
+    }
+
+    @keyframes log-scroll {
+        0% { transform: translateX(100vw); }
+        100% { transform: translateX(-200%); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Hero headline — word-by-word reveal */
+    .hero-title {
+        font-size: 5rem;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        margin-bottom: 1.5rem !important;
+        overflow: hidden;
+    }
+
+    .hero-title .word {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(100%);
+        animation: word-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes word-reveal {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        max-width: 560px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+        opacity: 0;
+        animation: fade-up 0.8s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .hero-cta {
+        opacity: 0;
+        animation: fade-up 0.8s 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fade-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scan line — sweeps full page */
+    .page-scanline {
+        position: fixed;
+        left: 0; right: 0;
+        height: 1px;
+        background: var(--rosso);
+        opacity: 0.12;
+        z-index: 1;
+        animation: scanline-sweep 8s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    @keyframes scanline-sweep {
+        0% { top: 0; opacity: 0; }
+        10% { opacity: 0.12; }
+        90% { opacity: 0.12; }
+        100% { top: 100vh; opacity: 0; }
+    }
+
+
+
+    /* ====== SECTION HEADER ====== */
+    .section-header {
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin-bottom: 2.5rem;
+        text-align: center;
+    }
+
+    .section-header .dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background: var(--rosso);
+        border-radius: 50%;
+        margin-left: 4px;
+        vertical-align: middle;
+        animation: breathe-pulse 2s infinite;
+    }
+
+    @keyframes breathe-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ====== BENTO GRID ====== */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        padding-bottom: 6rem;
+    }
+
+    /* Scroll-triggered entrance for cards */
+    .bento-card {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-color 0.3s ease,
+                    box-shadow 0.3s ease;
+        will-change: transform, opacity;
+    }
+
+    .bento-card.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .bento-card:hover {
+        border-color: var(--rosso) !important;
+        box-shadow: 0 0 0 1px var(--rosso) !important;
+    }
+
+    /* Inner mockup panels — lift on card hover */
+    .bento-card .mock-panel {
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .bento-card:hover .mock-panel {
+        transform: translateY(-2px);
+        border-color: var(--rosso) !important;
+    }
+
+    /* Animated progress bars */
+    .progress-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: 0px;
+        transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bento-card.visible .progress-fill {
+        /* width set via inline style */
+    }
+
+    /* Animated bar chart */
+    .bar-chart-bar {
+        transform-origin: bottom;
+        transform: scaleY(0);
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bento-card.visible .bar-chart-bar {
+        transform: scaleY(1);
+    }
+
+    /* Integration connector pulse */
+    .connector-line {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .connector-line::after {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 40%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, var(--rosso), transparent);
+        animation: connector-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes connector-pulse {
+        0% { left: -40%; }
+        100% { left: 140%; }
+    }
+
+    /* Integration node hover */
+    .integration-node {
+        transition: all 0.3s ease;
+        cursor: default;
+    }
+
+    .integration-node:hover {
+        background: var(--rosso) !important;
+        color: #FFFFFF !important;
+        border-color: var(--rosso) !important;
+    }
+
+    /* ====== BOTTOM CTA ====== */
+    .bottom-cta {
+        text-align: center;
+        padding: 4rem 1rem 6rem;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .bottom-cta.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .bottom-cta h2 {
+        font-size: 3rem;
+        letter-spacing: -0.03em;
+        margin-bottom: 1rem !important;
+    }
+
+    .bottom-cta p {
+        font-size: 1.15rem;
+        max-width: 480px;
+        margin: 0 auto 2rem;
+    }
+
+    /* ====== RESPONSIVE ====== */
+    @media (max-width: 768px) {
+        .bento-grid {
+            grid-template-columns: 1fr !important;
+        }
+        .bento-grid .card {
+            grid-column: span 1 !important;
+            padding: 2rem !important;
+        }
+        .hero-title {
+            font-size: 3rem !important;
+        }
+
+        .bottom-cta h2 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Animated grid background canvas -->
+<canvas id="grid-canvas"></canvas>
+
+<!-- Recording light indicator -->
+<div class="rec-indicator">
+    <div class="rec-square"></div>
+</div>
+
+<!-- Page-wide floating log lines -->
+<div class="page-bg-logs">
+    <div class="log-line" style="top: 8%; animation-delay: 0s; animation-duration: 22s;">> SYS.INIT // MODULE_LOADED: ASSESSMENT_ENGINE v4.2.1 // STATUS: OPERATIONAL</div>
+    <div class="log-line" style="top: 22%; animation-delay: -8s; animation-duration: 28s;">> PIPELINE.RUN // CANDIDATES_PROCESSED: 1,247 // AVG_SCORE: 78.3 // ANOMALIES: 0</div>
+    <div class="log-line" style="top: 36%; animation-delay: -14s; animation-duration: 32s;">> AI.GENERATE // QUESTIONS_CREATED: 50 // DIFFICULTY: ADAPTIVE // LANG: [PY, JS, SQL]</div>
+    <div class="log-line" style="top: 50%; animation-delay: -4s; animation-duration: 26s;">> SCORING.COMPLETE // BATCH_ID: 0x7F3A // ACCURACY: 99.7% // TIME: 0.34s</div>
+    <div class="log-line" style="top: 64%; animation-delay: -18s; animation-duration: 30s;">> INTEGRITY.CHECK // PROCTORING: ACTIVE // FACE_DETECT: OK // TAB_SWITCH: 0</div>
+    <div class="log-line" style="top: 78%; animation-delay: -10s; animation-duration: 24s;">> DEPLOY.STATUS // REGION: GLOBAL // UPTIME: 99.99% // ENCRYPTION: AES-256-GCM</div>
+    <div class="log-line" style="top: 92%; animation-delay: -6s; animation-duration: 34s;">> CACHE.SYNC // NODES: 12 // HIT_RATE: 97.2% // EVICTION_POLICY: LRU</div>
+</div>
+
+<!-- Page-wide sweeping scan line -->
+<div class="page-scanline"></div>
+
+<!-- ===================== HERO ===================== -->
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title" id="hero-title">
+            <span class="word" style="animation-delay: 0.1s;">Hire</span>
+            <span class="word" style="animation-delay: 0.2s;">smarter.</span>
+            <br>
+            <span class="word" style="animation-delay: 0.35s;">Evaluate</span>
+            <span class="word" style="animation-delay: 0.45s;">faster.</span>
+        </h1>
+        <p class="hero-subtitle text-muted">
+            Post jobs, build AI-powered assessments, and evaluate entry-level candidates
+            with intelligent scoring and instant feedback.
+        </p>
+        <div class="hero-cta flex" style="justify-content: center; gap: 1.25rem;">
+            <a href="{% url 'signup' %}" class="btn btn-primary" style="padding: 1.1rem 2.5rem; font-size: 1.05rem;">Get Started</a>
+            <a href="{% url 'login' %}" class="btn btn-secondary" style="padding: 1.1rem 2.5rem; font-size: 1.05rem;">Log In</a>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- ===================== BENTO GRID ===================== -->
+<h2 class="section-header">Everything you need<span class="dot"></span></h2>
+
+<div class="bento-grid">
+    <!-- Card 1: Automated Scoring (2-col) -->
+    <div class="card bento-card"
+        style="grid-column: span 2; display: flex; flex-direction: column; justify-content: space-between; min-height: 320px; padding: 3rem;">
+        <div>
+            <h3 style="font-size: 2rem; margin-bottom: 1rem;">Automated Scoring</h3>
+            <p class="text-muted" style="font-size: 1.15rem; max-width: 400px; line-height: 1.5;">Save hours of manual
+                review. Let our intelligent engine score candidate responses instantly and accurately.</p>
+        </div>
+        <div class="mock-panel"
+            style="margin-top: 2rem; width: 100%; background: var(--surface); border: 1px solid var(--border); padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.875rem; font-family: monospace; color: var(--text);">
+                <span>Candidate Alpha</span>
+                <span style="color: var(--success);" class="counter" data-target="94" data-suffix="/100">0/100</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: var(--surface-alt); border: 1px solid var(--border); overflow: hidden;">
+                <div class="progress-fill" style="background: var(--success);" data-width="94"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.875rem; font-family: monospace; color: var(--text);">
+                <span>Candidate Beta</span>
+                <span class="counter" data-target="88" data-suffix="/100">0/100</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: var(--surface-alt); border: 1px solid var(--border); overflow: hidden;">
+                <div class="progress-fill" style="background: var(--rosso);" data-width="88"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: AI Questions -->
+    <div class="card bento-card" style="display: flex; flex-direction: column; min-height: 320px; padding: 3rem;">
+        <h3 style="font-size: 1.75rem; margin-bottom: 1rem;">AI Questions</h3>
+        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 2rem; line-height: 1.5;">Generate tailored
+            questions based on job descriptions in seconds.</p>
+        <div class="mock-panel"
+            style="flex-grow: 1; background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; padding: 1.5rem; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%; font-family: monospace; font-size: 0.875rem;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--rosso); animation: breathe-pulse 2s infinite;"></div>
+                <span style="color: var(--text);">Generating Dataset...</span>
+                <span style="margin-left: auto; color: var(--text);">100%</span>
+            </div>
+            <div style="width: 100%; height: 4px; background: var(--surface-alt); border: 1px solid var(--border); overflow: hidden;">
+                <div class="progress-fill" style="background: var(--rosso);" data-width="100"></div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%; font-family: monospace; font-size: 0.875rem; margin-top: 0.5rem;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--warning);"></div>
+                <span style="color: var(--text-muted);">Calibrating Difficulty</span>
+                <span style="margin-left: auto; color: var(--text-muted);">65%</span>
+            </div>
+            <div style="width: 100%; height: 4px; background: var(--surface-alt); border: 1px solid var(--border); overflow: hidden;">
+                <div class="progress-fill" style="background: var(--warning);" data-width="65"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Instant Feedback -->
+    <div class="card bento-card" style="display: flex; flex-direction: column; min-height: 320px; padding: 3rem;">
+        <h3 style="font-size: 1.75rem; margin-bottom: 1rem;">Instant Feedback</h3>
+        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 2rem; line-height: 1.5;">Provide candidates with
+            rapid insights, improving application experience.</p>
+        <div class="mock-panel"
+            style="flex-grow: 1; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+            <div style="width: 100%; display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; height: 80px;">
+                    <div class="bar-chart-bar" style="width: 20%; height: 30px; background: var(--rosso); opacity: 0.8; transition-delay: 0.1s;"></div>
+                    <div class="bar-chart-bar" style="width: 20%; height: 50px; background: var(--rosso); opacity: 0.9; transition-delay: 0.25s;"></div>
+                    <div class="bar-chart-bar" style="width: 20%; height: 80px; background: var(--rosso); transition-delay: 0.4s;"></div>
+                    <div class="bar-chart-bar" style="width: 20%; height: 40px; background: var(--text); transition-delay: 0.55s;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">
+                    <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Seamless Integration (2-col) -->
+    <div class="card bento-card"
+        style="grid-column: span 2; display: flex; flex-direction: column; min-height: 320px; padding: 3rem;">
+        <h3 style="font-size: 2rem; margin-bottom: 1rem;">Seamless Integration</h3>
+        <p class="text-muted" style="font-size: 1.15rem; max-width: 400px; margin-bottom: 2rem; line-height: 1.5;">A
+            perfectly designed interface that fits beautifully right into your hiring workflow without skipping a beat.</p>
+        <div class="mock-panel"
+            style="flex-grow: 1; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; padding: 1.5rem; gap: 1rem;">
+            <div class="integration-node"
+                style="width: 50px; height: 50px; background: var(--surface); border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem;">
+                ATS</div>
+            <div class="connector-line" style="flex-grow: 1; height: 2px; background: var(--border);"></div>
+            <div class="integration-node"
+                style="width: 50px; height: 50px; background: var(--btn-bg); color: var(--btn-text); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem;">
+                API</div>
+            <div class="connector-line" style="flex-grow: 1; height: 2px; background: var(--border);"></div>
+            <div class="integration-node"
+                style="width: 50px; height: 50px; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">
+                HRIS</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== BOTTOM CTA ===================== -->
+<div class="bottom-cta" id="bottom-cta">
+    <h2>Ready to transform hiring<span style="color: var(--rosso);">?</span></h2>
+    <p class="text-muted">Join hundreds of companies using ACES to streamline candidate evaluation.</p>
+    <div class="flex" style="justify-content: center; gap: 1.25rem;">
+        <a href="{% url 'signup' %}" class="btn btn-primary" style="padding: 1rem 2.5rem;">Start Free</a>
+    </div>
+</div>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script>
+(function() {
+    // ---- 1. ANIMATED GRID BACKGROUND ----
+    var canvas = document.getElementById('grid-canvas');
+    if (canvas) {
+        var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        var w, h;
+        var crosshairs = [];
+        var GRID = 80;
+        var NUM_CROSSHAIRS = 8;
+
+        function resize() {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function initCrosshairs() {
+            crosshairs = [];
+            for (var i = 0; i < NUM_CROSSHAIRS; i++) {
+                crosshairs.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: 6 + Math.random() * 6,
+                    opacity: 0.08 + Math.random() * 0.08
+                });
+            }
+        }
+
+        function getColors() {
+            var cs = getComputedStyle(document.documentElement);
+            return {
+                grid: cs.getPropertyValue('--dot-grid').trim() || '#D1D1D1',
+                crosshair: cs.getPropertyValue('--rosso').trim() || '#FF0037',
+                border: cs.getPropertyValue('--border-subtle').trim() || '#D1D1D1'
+            };
+        }
+
+        function draw() {
+            var colors = getColors();
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw subtle grid lines
+            ctx.strokeStyle = colors.border;
+            ctx.lineWidth = 0.3;
+            ctx.globalAlpha = 0.3;
+            for (var x = 0; x < w; x += GRID) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (var y = 0; y < h; y += GRID) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // Draw floating crosshair markers
+            ctx.globalAlpha = 1;
+            crosshairs.forEach(function(c) {
+                c.x += c.vx;
+                c.y += c.vy;
+                if (c.x < 0 || c.x > w) c.vx *= -1;
+                if (c.y < 0 || c.y > h) c.vy *= -1;
+
+                ctx.strokeStyle = colors.crosshair;
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = c.opacity;
+
+                // Crosshair shape
+                var s = c.size;
+                ctx.beginPath();
+                ctx.moveTo(c.x - s, c.y);
+                ctx.lineTo(c.x + s, c.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(c.x, c.y - s);
+                ctx.lineTo(c.x, c.y + s);
+                ctx.stroke();
+
+                // Corner brackets
+                var b = s * 1.5;
+                ctx.globalAlpha = c.opacity * 0.5;
+                ctx.beginPath();
+                ctx.moveTo(c.x - b, c.y - b + 4);
+                ctx.lineTo(c.x - b, c.y - b);
+                ctx.lineTo(c.x - b + 4, c.y - b);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(c.x + b, c.y - b + 4);
+                ctx.lineTo(c.x + b, c.y - b);
+                ctx.lineTo(c.x + b - 4, c.y - b);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(c.x - b, c.y + b - 4);
+                ctx.lineTo(c.x - b, c.y + b);
+                ctx.lineTo(c.x - b + 4, c.y + b);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(c.x + b, c.y + b - 4);
+                ctx.lineTo(c.x + b, c.y + b);
+                ctx.lineTo(c.x + b - 4, c.y + b);
+                ctx.stroke();
+            });
+            ctx.globalAlpha = 1;
+
+            requestAnimationFrame(draw);
+        }
+
+        resize();
+        initCrosshairs();
+        draw();
+        window.addEventListener('resize', function() { resize(); initCrosshairs(); });
+    }
+
+    // ---- 2. INTERSECTION OBSERVER for scroll animations ----
+    var observerOpts = { threshold: 0.15, rootMargin: '0px 0px -50px 0px' };
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+
+                // Trigger progress bars inside this card
+                entry.target.querySelectorAll('.progress-fill').forEach(function(bar) {
+                    var targetW = bar.getAttribute('data-width');
+                    if (targetW) bar.style.width = targetW + '%';
+                });
+
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOpts);
+
+    document.querySelectorAll('.bento-card, .bottom-cta').forEach(function(el) {
+        observer.observe(el);
+    });
+
+    // ---- 3. ANIMATED COUNTERS ----
+    var counterObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var el = entry.target;
+                var target = parseInt(el.getAttribute('data-target'), 10);
+                var suffix = el.getAttribute('data-suffix') || '';
+                var duration = target > 1000 ? 2000 : 1200;
+                var start = performance.now();
+
+                function tick(now) {
+                    var progress = Math.min((now - start) / duration, 1);
+                    // Ease out cubic
+                    var eased = 1 - Math.pow(1 - progress, 3);
+                    var current = Math.round(eased * target);
+                    el.textContent = current.toLocaleString() + suffix;
+                    if (progress < 1) requestAnimationFrame(tick);
+                }
+                requestAnimationFrame(tick);
+                counterObserver.unobserve(el);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.counter').forEach(function(el) {
+        counterObserver.observe(el);
+    });
+
+    // ---- 4. BENTO CARD STAGGER ----
+    var cards = document.querySelectorAll('.bento-card');
+    cards.forEach(function(card, i) {
+        card.style.transitionDelay = (i * 0.12) + 's';
+    });
+})();
+</script>
+{% endblock %}

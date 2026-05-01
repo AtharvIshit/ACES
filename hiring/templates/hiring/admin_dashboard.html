@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CONTROL PANEL — ACES.{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ====== CONTROL PANEL STYLES ====== */
+    .cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 3rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .cp-header h1 {
+        font-size: 2.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .cp-header .system-tag {
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .cp-header .live-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--rosso);
+        border-radius: 50%;
+        animation: cp-blink 2s ease-in-out infinite;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
+    @keyframes cp-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+
+    /* ── Stat Grid ── */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        padding: 1.75rem;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--rosso);
+    }
+
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--rosso);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .stat-card:hover::after {
+        opacity: 1;
+    }
+
+    .stat-label {
+        font-family: var(--font-label);
+        font-size: 9px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+        font-family: var(--font-display);
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1;
+    }
+
+    .stat-sub {
+        font-family: var(--font-label);
+        font-size: 9px;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    /* ── Nav Strip ── */
+    .cp-nav {
+        display: flex;
+        gap: 0;
+        margin-bottom: 2.5rem;
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .cp-nav a {
+        flex: 1;
+        text-align: center;
+        padding: 1rem;
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted) !important;
+        text-decoration: none !important;
+        border-bottom: none !important;
+        border-right: 1px solid var(--border);
+        background: var(--card-bg);
+        transition: all 0.2s ease;
+    }
+
+    .cp-nav a:last-child {
+        border-right: none;
+    }
+
+    .cp-nav a:hover, .cp-nav a.active {
+        background: var(--rosso) !important;
+        color: #FFFFFF !important;
+    }
+
+    /* ── Activity Chart ── */
+    .chart-panel {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .chart-panel .chart-header {
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    /* ── Activity Feed ── */
+    .feed-header {
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .feed-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        margin-bottom: -1px;
+        transition: all 0.15s ease;
+        text-decoration: none !important;
+    }
+
+    .feed-row:hover {
+        border-color: var(--rosso);
+        background: var(--surface-alt);
+        z-index: 1;
+        position: relative;
+    }
+
+    .feed-row .feed-user {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text);
+    }
+
+    .feed-row .feed-meta {
+        font-family: var(--font-label);
+        font-size: 9px;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .feed-row .feed-score {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .feed-row .feed-badge {
+        font-family: var(--font-label);
+        font-size: 8px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border: 1px solid;
+    }
+
+    .feed-badge.pass {
+        color: var(--success);
+        border-color: var(--success);
+    }
+
+    .feed-badge.fail {
+        color: var(--rosso);
+        border-color: var(--rosso);
+    }
+
+    @media (max-width: 768px) {
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+        .cp-nav { flex-wrap: wrap; }
+        .cp-nav a { flex: none; width: 50%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="cp-header">
+    <div>
+        <h1>CONTROL_PANEL //</h1>
+        <div class="system-tag" style="margin-top: 0.5rem;">
+            <span class="live-dot"></span>SYSTEM OVERVIEW — ALL MODULES OPERATIONAL
+        </div>
+    </div>
+    <div class="system-tag" style="text-align: right;">
+        BUILD: v4.2.1<br>
+        UPTIME: 99.99%
+    </div>
+</div>
+
+<!-- Navigation Strip -->
+<nav class="cp-nav">
+    <a href="{% url 'admin_dashboard' %}" class="active">[OVERVIEW]</a>
+    <a href="{% url 'admin_users' %}">[USERS]</a>
+    <a href="{% url 'admin_jobs' %}">[JOBS]</a>
+    <a href="{% url 'admin_assessments' %}">[ASSESSMENTS]</a>
+    <a href="{% url 'admin_attempts' %}">[ATTEMPTS]</a>
+    <a href="{% url 'admin_proctoring' %}">[PROCTORING]</a>
+</nav>
+
+<!-- Stat Cards -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">[TOTAL USERS]</div>
+        <div class="stat-value counter" data-target="{{ total_users }}">0</div>
+        <div class="stat-sub">{{ total_recruiters }} RECRUITERS · {{ total_candidates }} CANDIDATES</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">[ACTIVE JOBS]</div>
+        <div class="stat-value counter" data-target="{{ active_jobs }}">0</div>
+        <div class="stat-sub">{{ total_jobs }} TOTAL LISTINGS</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">[ASSESSMENTS]</div>
+        <div class="stat-value counter" data-target="{{ total_assessments }}">0</div>
+        <div class="stat-sub">ACROSS ALL JOBS</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">[PASS RATE]</div>
+        <div class="stat-value">{{ pass_rate }}%</div>
+        <div class="stat-sub">{{ passed_attempts }}/{{ completed_attempts }} PASSED</div>
+    </div>
+</div>
+
+<!-- Secondary Stats Row -->
+<div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat-card">
+        <div class="stat-label">[TOTAL ATTEMPTS]</div>
+        <div class="stat-value counter" data-target="{{ total_attempts }}">0</div>
+        <div class="stat-sub">{{ completed_attempts }} COMPLETED</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">[AVG SCORE]</div>
+        <div class="stat-value">{% if avg_score %}{{ avg_score|floatformat:1 }}%{% else %}—{% endif %}</div>
+        <div class="stat-sub">ACROSS ALL ATTEMPTS</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">[NEW USERS 30D]</div>
+        <div class="stat-value counter" data-target="{{ new_users_30d }}">0</div>
+        <div class="stat-sub">LAST 30 DAYS</div>
+    </div>
+</div>
+
+<!-- Activity Chart -->
+<div class="chart-panel">
+    <div class="chart-header">[ATTEMPT ACTIVITY — LAST 14 DAYS]</div>
+    <div style="position: relative; height: 200px; width: 100%;">
+        <canvas id="activityChart"></canvas>
+    </div>
+</div>
+
+<!-- Recent Activity Feed -->
+<div class="feed-header">[RECENT ACTIVITY — LATEST COMPLETIONS]</div>
+{% for att in recent_attempts %}
+<a href="{% url 'admin_attempt_detail' pk=att.pk %}" class="feed-row" style="border-bottom: none !important;">
+    <div>
+        <div class="feed-user">{{ att.candidate.get_full_name|default:att.candidate.username }}</div>
+        <div class="feed-meta">{{ att.assessment.title }} · {{ att.completed_at|date:"M d, Y H:i" }}</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <span class="feed-score" style="color: {% if att.passed %}var(--success){% else %}var(--rosso){% endif %};">
+            {{ att.percentage|floatformat:1 }}%
+        </span>
+        <span class="feed-badge {% if att.passed %}pass{% else %}fail{% endif %}">
+            {% if att.passed %}PASSED{% else %}FAILED{% endif %}
+        </span>
+    </div>
+</a>
+{% empty %}
+<div style="text-align: center; padding: 3rem; border: 1px dashed var(--border); background: var(--card-bg);">
+    <span class="stat-label">[NO COMPLETED ATTEMPTS YET]</span>
+</div>
+{% endfor %}
+
+<script>
+(function() {
+    // ── Animated Counters ──
+    var counters = document.querySelectorAll('.counter');
+    counters.forEach(function(el) {
+        var target = parseInt(el.getAttribute('data-target'), 10);
+        if (isNaN(target)) return;
+        var duration = 1200;
+        var start = performance.now();
+        function tick(now) {
+            var progress = Math.min((now - start) / duration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(eased * target).toLocaleString();
+            if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    });
+
+    // ── Activity Chart ──
+    var dailyData = {{ daily_json|safe }};
+    var ctx = document.getElementById('activityChart');
+    if (ctx && typeof Chart !== 'undefined') {
+        var cs = getComputedStyle(document.documentElement);
+        var textColor = cs.getPropertyValue('--text-muted').trim();
+        var borderClr = cs.getPropertyValue('--border').trim();
+        var rosso = cs.getPropertyValue('--rosso').trim();
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: dailyData.map(function(d) { return d.date; }),
+                datasets: [{
+                    data: dailyData.map(function(d) { return d.count; }),
+                    backgroundColor: rosso,
+                    borderColor: 'transparent',
+                    borderRadius: 0,
+                    barPercentage: 0.6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        grid: { color: borderClr, drawBorder: false },
+                        ticks: {
+                            color: textColor,
+                            font: { family: '"JetBrains Mono", monospace', size: 9 },
+                            maxRotation: 0,
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: borderClr, drawBorder: false },
+                        ticks: {
+                            color: textColor,
+                            font: { family: '"JetBrains Mono", monospace', size: 9 },
+                            stepSize: 1,
+                        }
+                    }
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

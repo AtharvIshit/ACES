@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}ASSESSMENTS — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cp-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2.5rem; letter-spacing: 0.05em; }
+
+    .cp-nav {
+        display: flex; gap: 0; margin-bottom: 2rem;
+        border: 1px solid var(--border); overflow: hidden;
+    }
+    .cp-nav a {
+        flex: 1; text-align: center; padding: 1rem;
+        font-family: var(--font-label); font-size: 10px; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--text-muted) !important;
+        text-decoration: none !important; border-bottom: none !important;
+        border-right: 1px solid var(--border); background: var(--card-bg); transition: all 0.2s ease;
+    }
+    .cp-nav a:last-child { border-right: none; }
+    .cp-nav a:hover, .cp-nav a.active { background: var(--rosso) !important; color: #FFFFFF !important; }
+
+    /* Table */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+    }
+    .data-table thead {
+        background: var(--btn-bg);
+    }
+    .data-table th {
+        padding: 1rem 1.25rem;
+        font-family: var(--font-label) !important;
+        font-size: 9px !important;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--btn-text) !important;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        font-weight: 700;
+    }
+    .data-table td {
+        padding: 1rem 1.25rem;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--border-subtle);
+        color: var(--text);
+        vertical-align: middle;
+    }
+    .data-table tbody tr {
+        transition: all 0.15s;
+    }
+    .data-table tbody tr:hover {
+        background: var(--surface-alt);
+    }
+    .data-table .mono {
+        font-family: var(--font-label);
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+    .score-cell {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .status-tag {
+        font-family: var(--font-label); font-size: 8px;
+        letter-spacing: 1px; text-transform: uppercase;
+        padding: 3px 10px; border: 1px solid; display: inline-block;
+    }
+    .tag-active { color: var(--success); border-color: var(--success); }
+    .tag-inactive { color: var(--text-muted); border-color: var(--border); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-header">
+    <div><h1>ASSESSMENT_BANK //</h1></div>
+</div>
+
+<nav class="cp-nav">
+    <a href="{% url 'admin_dashboard' %}">[OVERVIEW]</a>
+    <a href="{% url 'admin_users' %}">[USERS]</a>
+    <a href="{% url 'admin_jobs' %}">[JOBS]</a>
+    <a href="{% url 'admin_assessments' %}" class="active">[ASSESSMENTS]</a>
+    <a href="{% url 'admin_attempts' %}">[ATTEMPTS]</a>
+    <a href="{% url 'admin_proctoring' %}">[PROCTORING]</a>
+</nav>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>[ASSESSMENT]</th>
+            <th>[JOB]</th>
+            <th>[RECRUITER]</th>
+            <th style="text-align: center;">[QUESTIONS]</th>
+            <th style="text-align: center;">[ATTEMPTS]</th>
+            <th style="text-align: center;">[AVG SCORE]</th>
+            <th style="text-align: center;">[STATUS]</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in assessments %}
+        <tr>
+            <td>
+                <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 0.9rem;">{{ a.title }}</div>
+                <div class="mono" style="color: var(--text-muted); margin-top: 2px;">{{ a.duration_minutes }}MIN · PASS: {{ a.passing_score }}%</div>
+            </td>
+            <td class="mono">{{ a.job.title }}</td>
+            <td class="mono">{{ a.job.created_by.username }}</td>
+            <td style="text-align: center;" class="score-cell">{{ a.question_count }}</td>
+            <td style="text-align: center;" class="score-cell">{{ a.attempt_count }}</td>
+            <td style="text-align: center;" class="score-cell">
+                {% if a.avg_score %}{{ a.avg_score|floatformat:1 }}%{% else %}—{% endif %}
+            </td>
+            <td style="text-align: center;">
+                <span class="status-tag {% if a.is_active %}tag-active{% else %}tag-inactive{% endif %}">
+                    {% if a.is_active %}ACTIVE{% else %}CLOSED{% endif %}
+                </span>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 3rem; font-family: var(--font-label); font-size: 10px; letter-spacing: 2px; color: var(--text-muted);">
+                [NO ASSESSMENTS FOUND]
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

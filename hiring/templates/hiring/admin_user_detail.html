@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}USER: {{ target_user.username }} — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2rem; letter-spacing: 0.05em; }
+
+    .back-link {
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted) !important;
+        text-decoration: none !important;
+        border-bottom: none !important;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+        transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--rosso) !important; }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .info-panel {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        padding: 2rem;
+    }
+
+    .info-panel .panel-title {
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .info-row:last-child { border-bottom: none; }
+
+    .info-key {
+        font-family: var(--font-label);
+        font-size: 9px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .info-val {
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        color: var(--text);
+        text-align: right;
+    }
+
+    .toggle-form { margin-top: 1.5rem; }
+
+    .role-badge {
+        font-family: var(--font-label);
+        font-size: 8px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border: 1px solid;
+    }
+    .role-recruiter {
+        color: var(--rosso);
+        border-color: var(--rosso);
+    }
+    .role-candidate {
+        color: var(--success);
+        border-color: var(--success);
+    }
+
+    .activity-header {
+        font-family: var(--font-label);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .activity-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        margin-bottom: -1px;
+        transition: all 0.15s;
+    }
+    .activity-row:hover {
+        border-color: var(--rosso);
+        background: var(--surface-alt);
+    }
+
+    @media (max-width: 768px) {
+        .profile-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_users' %}" class="back-link">&larr; BACK TO USERS</a>
+
+<div class="cp-header">
+    <div>
+        <h1>{{ target_user.get_full_name|default:target_user.username }} //</h1>
+        <div style="margin-top: 0.5rem;">
+            {% if profile %}
+            <span class="role-badge {% if profile.role == 'R' %}role-recruiter{% else %}role-candidate{% endif %}">
+                {{ profile.get_role_display }}
+            </span>
+            {% endif %}
+            {% if target_user.is_superuser %}
+            <span class="role-badge" style="color: var(--warning); border-color: var(--warning); margin-left: 0.5rem;">ADMIN</span>
+            {% endif %}
+            {% if not target_user.is_active %}
+            <span class="role-badge" style="color: var(--rosso); border-color: var(--rosso); margin-left: 0.5rem;">DEACTIVATED</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="profile-grid">
+    <!-- Account Info -->
+    <div class="info-panel">
+        <div class="panel-title">[ACCOUNT INFORMATION]</div>
+        <div class="info-row">
+            <span class="info-key">USERNAME</span>
+            <span class="info-val">{{ target_user.username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">EMAIL</span>
+            <span class="info-val">{{ target_user.email|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">FIRST NAME</span>
+            <span class="info-val">{{ target_user.first_name|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">LAST NAME</span>
+            <span class="info-val">{{ target_user.last_name|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">DATE JOINED</span>
+            <span class="info-val">{{ target_user.date_joined|date:"M d, Y H:i" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">LAST LOGIN</span>
+            <span class="info-val">{{ target_user.last_login|date:"M d, Y H:i"|default:"NEVER" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">STATUS</span>
+            <span class="info-val" style="color: {% if target_user.is_active %}var(--success){% else %}var(--rosso){% endif %};">
+                {% if target_user.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
+            </span>
+        </div>
+
+        <!-- Toggle Active -->
+        {% if target_user != request.user %}
+        <form method="post" action="{% url 'admin_user_toggle' pk=target_user.pk %}" class="toggle-form">
+            {% csrf_token %}
+            <button type="submit" class="btn {% if target_user.is_active %}btn-danger{% else %}btn-primary{% endif %} btn-sm" style="width: 100%;">
+                {% if target_user.is_active %}[DEACTIVATE USER]{% else %}[ACTIVATE USER]{% endif %}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Profile Info -->
+    <div class="info-panel">
+        <div class="panel-title">[PROFILE DETAILS]</div>
+        {% if profile %}
+        <div class="info-row">
+            <span class="info-key">ROLE</span>
+            <span class="info-val">{{ profile.get_role_display }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">ORGANIZATION</span>
+            <span class="info-val">{{ profile.organization|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">PHONE</span>
+            <span class="info-val">{{ profile.phone|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">BIO</span>
+            <span class="info-val" style="max-width: 250px; text-align: right;">{{ profile.bio|default:"—"|truncatewords:20 }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">RESUME</span>
+            <span class="info-val">
+                {% if profile.resume %}
+                <a href="{{ profile.resume.url }}" target="_blank" style="color: var(--rosso) !important; border-bottom: 1px solid var(--rosso) !important;">DOWNLOAD</a>
+                {% else %}—{% endif %}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">PROFILE PIC</span>
+            <span class="info-val">
+                {% if profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--rosso); object-fit: cover;">
+                {% else %}—{% endif %}
+            </span>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-family: var(--font-label); font-size: 10px; letter-spacing: 2px;">
+            [NO PROFILE DATA]
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Activity Section -->
+{% if attempts %}
+<div class="activity-header">[ASSESSMENT ATTEMPTS]</div>
+{% for att in attempts %}
+<div class="activity-row">
+    <div>
+        <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 0.95rem; color: var(--text);">
+            {{ att.assessment.title }}
+        </div>
+        <div style="font-family: var(--font-label); font-size: 9px; letter-spacing: 1px; color: var(--text-muted); margin-top: 2px;">
+            {{ att.assessment.job.title }} · {{ att.started_at|date:"M d, Y H:i" }}
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        {% if att.is_complete %}
+        <span style="font-family: var(--font-display); font-weight: 700; color: {% if att.passed %}var(--success){% else %}var(--rosso){% endif %};">
+            {{ att.percentage|floatformat:1 }}%
+        </span>
+        <a href="{% url 'admin_attempt_detail' pk=att.pk %}" class="btn btn-sm btn-secondary" style="border-bottom: none !important;">[VIEW]</a>
+        {% else %}
+        <span style="font-family: var(--font-label); font-size: 9px; color: var(--warning); letter-spacing: 1px;">IN PROGRESS</span>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if jobs %}
+<div class="activity-header">[POSTED JOBS]</div>
+{% for job in jobs %}
+<div class="activity-row">
+    <div>
+        <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 0.95rem; color: var(--text);">
+            {{ job.title }}
+        </div>
+        <div style="font-family: var(--font-label); font-size: 9px; letter-spacing: 1px; color: var(--text-muted); margin-top: 2px;">
+            {{ job.department }} · {{ job.created_at|date:"M d, Y" }} · {{ job.assessments.count }} ASSESSMENTS
+        </div>
+    </div>
+    <div>
+        <span class="role-badge" style="{% if job.is_active %}color: var(--success); border-color: var(--success);{% else %}color: var(--text-muted); border-color: var(--border);{% endif %}">
+            {% if job.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
+        </span>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

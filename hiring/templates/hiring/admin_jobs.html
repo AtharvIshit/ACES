@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}JOBS — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2.5rem; letter-spacing: 0.05em; }
+
+    .cp-nav {
+        display: flex; gap: 0; margin-bottom: 2rem;
+        border: 1px solid var(--border); overflow: hidden;
+    }
+    .cp-nav a {
+        flex: 1; text-align: center; padding: 1rem;
+        font-family: var(--font-label); font-size: 10px; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--text-muted) !important;
+        text-decoration: none !important; border-bottom: none !important;
+        border-right: 1px solid var(--border); background: var(--card-bg);
+        transition: all 0.2s ease;
+    }
+    .cp-nav a:last-child { border-right: none; }
+    .cp-nav a:hover, .cp-nav a.active { background: var(--rosso) !important; color: #FFFFFF !important; }
+
+    .filter-tabs {
+        display: flex; gap: 0; margin-bottom: 2rem;
+        border: 1px solid var(--border); overflow: hidden; width: fit-content;
+    }
+    .filter-tabs a {
+        padding: 0.6rem 1.25rem; font-family: var(--font-label);
+        font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+        color: var(--text-muted) !important; text-decoration: none !important;
+        border-bottom: none !important; border-right: 1px solid var(--border);
+        background: var(--card-bg); transition: all 0.2s;
+    }
+    .filter-tabs a:last-child { border-right: none; }
+    .filter-tabs a:hover, .filter-tabs a.active { background: var(--btn-bg); color: var(--btn-text) !important; }
+
+    .job-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 1.25rem 1.5rem; background: var(--card-bg);
+        border: 1px solid var(--card-border); margin-bottom: -1px;
+        transition: all 0.15s ease;
+    }
+    .job-row:hover {
+        border-color: var(--rosso); background: var(--surface-alt);
+        z-index: 1; position: relative;
+    }
+    .job-title {
+        font-family: var(--font-display); font-size: 1rem;
+        text-transform: uppercase; letter-spacing: 0.03em; color: var(--text);
+    }
+    .job-meta {
+        font-family: var(--font-label); font-size: 9px;
+        letter-spacing: 1px; color: var(--text-muted); margin-top: 3px;
+    }
+    .job-stats {
+        display: flex; gap: 1rem; align-items: center;
+    }
+    .job-stat {
+        text-align: center;
+    }
+    .job-stat-value {
+        font-family: var(--font-display); font-size: 1.25rem;
+        font-weight: 700; color: var(--text);
+    }
+    .job-stat-label {
+        font-family: var(--font-label); font-size: 8px;
+        letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase;
+    }
+    .status-tag {
+        font-family: var(--font-label); font-size: 8px;
+        letter-spacing: 1px; text-transform: uppercase;
+        padding: 3px 10px; border: 1px solid;
+    }
+    .status-active { color: var(--success); border-color: var(--success); }
+    .status-inactive { color: var(--text-muted); border-color: var(--border); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-header">
+    <div><h1>JOB_REGISTRY //</h1></div>
+</div>
+
+<nav class="cp-nav">
+    <a href="{% url 'admin_dashboard' %}">[OVERVIEW]</a>
+    <a href="{% url 'admin_users' %}">[USERS]</a>
+    <a href="{% url 'admin_jobs' %}" class="active">[JOBS]</a>
+    <a href="{% url 'admin_assessments' %}">[ASSESSMENTS]</a>
+    <a href="{% url 'admin_attempts' %}">[ATTEMPTS]</a>
+    <a href="{% url 'admin_proctoring' %}">[PROCTORING]</a>
+</nav>
+
+<div class="filter-tabs">
+    <a href="{% url 'admin_jobs' %}" class="{% if status_filter == 'all' %}active{% endif %}">ALL</a>
+    <a href="{% url 'admin_jobs' %}?status=active" class="{% if status_filter == 'active' %}active{% endif %}">ACTIVE</a>
+    <a href="{% url 'admin_jobs' %}?status=inactive" class="{% if status_filter == 'inactive' %}active{% endif %}">INACTIVE</a>
+</div>
+
+{% for job in jobs %}
+<div class="job-row">
+    <div>
+        <div class="job-title">{{ job.title }}</div>
+        <div class="job-meta">
+            BY {{ job.created_by.get_full_name|default:job.created_by.username }} ·
+            {{ job.department|default:"—" }} ·
+            {{ job.location|default:"—" }} ·
+            {{ job.created_at|date:"M d, Y" }}
+        </div>
+    </div>
+    <div class="job-stats">
+        <div class="job-stat">
+            <div class="job-stat-value">{{ job.assessment_count }}</div>
+            <div class="job-stat-label">ASSESSMENTS</div>
+        </div>
+        <span class="status-tag {% if job.is_active %}status-active{% else %}status-inactive{% endif %}">
+            {% if job.is_active %}ACTIVE{% else %}CLOSED{% endif %}
+        </span>
+    </div>
+</div>
+{% empty %}
+<div style="text-align: center; padding: 3rem; border: 1px dashed var(--border); background: var(--card-bg);">
+    <span style="font-family: var(--font-label); font-size: 10px; letter-spacing: 2px; color: var(--text-muted);">[NO JOBS FOUND]</span>
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .data-cell {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--card-border) !important;
+        border-radius: 0px !important;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .data-cell:hover {
+        border-color: var(--rosso) !important;
+        background: var(--surface-alt) !important;
+        box-shadow: none !important;
+    }
+
+    .data-cell::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--rosso);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .data-cell:hover::before {
+        opacity: 1;
+    }
+
+    .candidate-name {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        text-transform: uppercase;
+        color: var(--text);
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+
+    .status-badge {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 4px 8px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-verified {
+        color: var(--success);
+        border-color: rgba(22, 163, 74, 0.3);
+        background: rgba(22, 163, 74, 0.05);
+    }
+
+    .status-failed {
+        color: var(--rosso);
+        border-color: rgba(255, 0, 55, 0.3);
+        background: rgba(255, 0, 55, 0.05);
+    }
+
+    .status-verified::before {
+        content: '■';
+        font-size: 0.7em;
+        animation: blink 2s infinite;
+    }
+
+    .status-failed::before {
+        content: '✕';
+        font-size: 0.7em;
+    }
+
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0;
+        }
+    }
+
+    /* Slide-out Panel Overlay */
+    #deep-dive-overlay {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 75%;
+        height: 100vh;
+        background: var(--surface) !important;
+        border-left: 1px solid var(--border) !important;
+        box-shadow: -10px 0 0px var(--border) !important;
+        z-index: 100;
+        transition: right 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    #deep-dive-overlay.open {
+        right: 0;
+    }
+
+    .overlay-header {
+        padding: 2rem 3rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .close-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 12px 2px 12px 2px;
+        transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+        background: var(--rosso);
+        border-color: var(--rosso);
+        color: white;
+    }
+
+    .overlay-content {
+        padding: 3rem;
+        flex-grow: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+    }
+
+    .chart-container {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--card-border) !important;
+        border-radius: 0px !important;
+        padding: 2rem;
+        position: relative;
+    }
+
+    .chart-title {
+        font-family: var(--font-label);
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 1.5rem;
+    }
+
+    .backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.4s;
+    }
+
+    .backdrop.open {
+        display: block;
+        opacity: 1;
+    }
+
+    .view-profile-link {
+        color: var(--rosso);
+        text-decoration: none;
+        font-family: var(--font-label);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 1rem;
+        display: inline-block;
+        border-bottom: 1px dashed var(--rosso);
+    }
+
+    .view-profile-link:hover {
+        color: white;
+        border-color: white;
+    }
+</style>
+
+<div style="max-width: 900px; margin: 2rem auto;">
+    <h1 style="margin-bottom: 0.5rem;">ATTEMPTS /// {{ assessment.title }}</h1>
+    <p class="text-muted mb-4 label-font text-uppercase" style="letter-spacing: 0.1em;">{{ assessment.job.title }}</p>
+
+    <div class="leaderboard-container">
+        {% for att in attempts %}
+        <div class="data-cell"
+            onclick="openDeepDive('{{ att.candidate.get_full_name|default:att.candidate.username|escapejs }}', {{ att.percentage }}, {{ att.passed|yesno:'true,false' }}, '{% url 'candidate_profile' pk=att.candidate.pk %}', '{{ att.pk }}')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div class="candidate-name">{{ att.candidate.get_full_name|default:att.candidate.username }}</div>
+                    <p class="text-muted label-font" style="font-size: 0.85rem; margin-top: 4px;">
+                        COMPLETED // {{ att.completed_at|date:"M d, Y H:i" }}
+                    </p>
+                </div>
+
+                <div style="text-align: right;">
+                    <div class="status-badge {% if att.passed %}status-verified{% else %}status-failed{% endif %}"
+                        style="margin-bottom: 8px;">
+                        {% if att.passed %}VERIFIED [OK]{% else %}ERR [FAILED]{% endif %}
+                    </div>
+                    <div class="dot-matrix"
+                        style="font-size: 1.5rem; color: {% if att.passed %}var(--text){% else %}var(--text-muted){% endif %};">
+                        {{ att.percentage }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div
+            style="text-align: center; padding: 4rem; border: 1px dashed var(--border); border-radius: 0px; background: var(--card-bg);">
+            <p class="dot-matrix" style="color: var(--text-muted); font-size: 1.2rem;">[NO DATA FOUND]</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+        <a href="{% url 'assessment_detail' pk=assessment.pk %}" class="btn btn-secondary">
+            &larr; BACK TO ASSESSMENT
+        </a>
+    </div>
+</div>
+
+<!-- Slide-out Overlay -->
+<div class="backdrop" id="overlay-backdrop" onclick="closeDeepDive()"></div>
+<div id="deep-dive-overlay">
+    <div class="overlay-header">
+        <div>
+            <h2 id="dd-name" style="margin: 0; color: var(--rosso);">[CANDIDATE]</h2>
+            <div id="dd-status" class="status-badge status-verified mt-1">VERIFIED [OK]</div>
+        </div>
+        <button class="close-btn" onclick="closeDeepDive()">[ESC] CLOSE</button>
+    </div>
+
+    <div class="overlay-content" style="grid-template-columns: 1fr;">
+        <!-- Radar Chart: Full Width -->
+        <div class="chart-container">
+            <div class="chart-title">Skill Vector Analysis</div>
+            <div style="max-width: 500px; margin: 0 auto;">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <a href="#" id="dd-profile-link" class="view-profile-link">FULL PROFILE &rarr;</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Deterministic radar data computed server-side
+    const RADAR_DATA = {{ radar_data_json|safe }};
+
+    let radarChartObj = null;
+
+    function openDeepDive(name, percentage, passed, profileUrl, attemptPk) {
+        document.getElementById('dd-name').textContent = name;
+
+        const statusEl = document.getElementById('dd-status');
+        if (passed) {
+            statusEl.className = 'status-badge status-verified mt-1';
+            statusEl.textContent = 'VERIFIED [OK]';
+        } else {
+            statusEl.className = 'status-badge status-failed mt-1';
+            statusEl.textContent = 'ERR [FAILED]';
+        }
+
+        document.getElementById('dd-profile-link').href = profileUrl;
+
+        document.getElementById('deep-dive-overlay').classList.add('open');
+        document.getElementById('overlay-backdrop').classList.add('open');
+
+        // Add ESC listener
+        document.addEventListener('keydown', escListener);
+
+        renderCharts(attemptPk, percentage);
+    }
+
+    function closeDeepDive() {
+        document.getElementById('deep-dive-overlay').classList.remove('open');
+        document.getElementById('overlay-backdrop').classList.remove('open');
+        document.removeEventListener('keydown', escListener);
+    }
+
+    function escListener(e) {
+        if (e.key === 'Escape') closeDeepDive();
+    }
+
+    function renderCharts(attemptPk, baseScore) {
+        // Read theme colors from CSS variables
+        var cs = getComputedStyle(document.documentElement);
+        var textColor = cs.getPropertyValue('--text').trim() || '#000000';
+        var borderColor = cs.getPropertyValue('--border').trim() || '#000000';
+
+        Chart.defaults.color = textColor;
+        Chart.defaults.font.family = '"JetBrains Mono", monospace';
+
+        // --- RADAR CHART (Deterministic) ---
+        const ctxRadar = document.getElementById('radarChart').getContext('2d');
+        if (radarChartObj) radarChartObj.destroy();
+
+        // Use pre-computed deterministic scores from backend
+        const scores = RADAR_DATA[String(attemptPk)] || [baseScore, baseScore, baseScore, baseScore, baseScore];
+
+        radarChartObj = new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: ['Domain Skills', 'Efficiency', 'Integrity', 'Versatility', 'Focus'],
+                datasets: [{
+                    label: 'Score Vector',
+                    data: scores,
+                    backgroundColor: 'rgba(255, 0, 55, 0.1)',
+                    borderColor: '#FF0037',
+                    pointBackgroundColor: '#FF0037',
+                    pointBorderColor: cs.getPropertyValue('--surface').trim(),
+                    pointHoverBackgroundColor: cs.getPropertyValue('--surface').trim(),
+                    pointHoverBorderColor: '#FF0037',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        angleLines: { color: borderColor },
+                        grid: { color: borderColor },
+                        pointLabels: {
+                            font: { family: '"JetBrains Mono", monospace', size: 14 },
+                            color: textColor
+                        },
+                        ticks: { display: false, min: 0, max: 100 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+</script>
+
+<!-- React Admin Query Dashboard Mount -->
+<div id="brutalist-admin-query-root" style="margin-top: 4rem;"></div>
+<!-- Load sql.js WASM for Client-side Database -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<!-- Load Tailwind CDN for the React component's utility classes -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Load React Bundle (IIFE) -->
+<script src="{% static 'hiring/js/proctoring/proctoring.bundle.js' %}"></script>
+<script>
+    if (window.mountBrutalistAdminQuery) {
+        window.mountBrutalistAdminQuery('brutalist-admin-query-root');
+    }
+</script>
+{% endblock %}

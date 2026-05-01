@@ -1,0 +1,692 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Immense override for this specific brutalist view */
+    .navbar {
+        display: none !important;
+    }
+
+    footer {
+        display: none !important;
+    }
+
+    main.container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body {
+        background: var(--bg) !important;
+        overflow: hidden;
+    }
+
+    #fullscreen-gate {
+        position: fixed;
+        inset: 0;
+        background: var(--bg);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .assessment-grid {
+        display: block;
+        height: 100vh;
+        width: 100vw;
+        background: var(--surface);
+        color: var(--text);
+    }
+
+    .left-panel {
+        padding: 4rem;
+        padding-right: 360px; /* Space for PIP */
+        width: 100%;
+        max-width: 1400px;
+        height: 100vh;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .left-panel::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .left-panel::-webkit-scrollbar-track {
+        background: var(--bg);
+    }
+
+    .left-panel::-webkit-scrollbar-thumb {
+        background: var(--text);
+        border-radius: 0px;
+    }
+
+    .right-panel {
+        position: fixed;
+        bottom: 2rem;
+        right: 1.25rem;
+        width: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        z-index: 100;
+        pointer-events: none;
+    }
+
+    .right-panel > * {
+        pointer-events: auto;
+    }
+
+    /* Video Feed Simulation */
+    .video-feed-container {
+        height: 240px;
+        position: relative;
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
+    }
+
+    .video-feed-container::after {
+        content: " ";
+        display: block;
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(128, 128, 128, 0.05) 2px, rgba(128, 128, 128, 0.05) 4px);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .scanline {
+        width: 100%;
+        height: 150px;
+        z-index: 3;
+        position: absolute;
+        top: 0;
+        pointer-events: none;
+        background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 0, 55, 0.1) 50%, rgba(0, 0, 0, 0) 100%);
+        animation: scanline 8s linear infinite;
+    }
+
+    @keyframes scanline {
+        0% {
+            transform: translateY(-100%);
+        }
+
+        100% {
+            transform: translateY(800%);
+        }
+    }
+
+    .rec-indicator {
+        position: absolute;
+        top: 2rem;
+        left: 2rem;
+        color: var(--rosso);
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        letter-spacing: 0.1em;
+    }
+
+    .rec-indicator::before {
+        content: '';
+        display: block;
+        width: 12px;
+        height: 12px;
+        background: var(--rosso);
+        border-radius: 50%;
+        animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0;
+        }
+    }
+
+    .camera-placeholder {
+        border: 1px solid var(--border);
+        padding: 2rem;
+        color: var(--text);
+        font-family: var(--font-display);
+        letter-spacing: 0.1em;
+        text-align: center;
+        z-index: 5;
+        background: var(--surface);
+    }
+
+    .timer-panel {
+        padding: 2rem;
+        background: var(--surface);
+        text-align: left;
+        border: 1px solid var(--border);
+        box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
+    }
+
+    .timer-display {
+        font-family: var(--font-display);
+        font-size: 4rem;
+        color: var(--text);
+        letter-spacing: 0.05em;
+        line-height: 1;
+        margin-top: 1rem;
+        transition: color 0.3s;
+    }
+
+    /* Code Editor Style Form */
+    .editor-header {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .editor-subheader {
+        font-family: var(--font-label);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.85rem;
+        margin-bottom: 4rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .question-block {
+        margin-bottom: 3rem;
+        position: relative;
+    }
+
+    .question-number {
+        position: absolute;
+        left: -3rem;
+        top: 0;
+        color: var(--text);
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+    }
+
+    .question-text {
+        font-size: 1.1rem;
+        color: var(--text);
+        margin-bottom: 1.5rem;
+        line-height: 1.7;
+        font-family: var(--font-body);
+    }
+
+    .options-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .brutal-radio-label {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: var(--font-label);
+        font-size: 0.95rem;
+        color: var(--text);
+    }
+
+    .brutal-radio-label:hover {
+        background: var(--border);
+        border-color: var(--text);
+        color: var(--bg);
+    }
+
+    input[type="radio"]:checked+.brutal-radio-label {
+        border-color: var(--rosso);
+        background: var(--rosso-soft);
+        color: var(--text);
+    }
+
+    input[type="radio"] {
+        display: none;
+    }
+
+    .brutal-radio-label::before {
+        content: '[ ]';
+        margin-right: 1rem;
+        color: var(--text);
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+    }
+
+    input[type="radio"]:checked+.brutal-radio-label::before {
+        content: '[X]';
+        color: var(--rosso);
+    }
+
+    .submit-bar {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn-brutal-large {
+        width: 100%;
+        padding: 1.5rem;
+        font-size: 1.2rem;
+        border-radius: 0;
+        background: var(--btn-bg);
+        color: var(--btn-text);
+        border: 1px solid var(--border);
+        font-family: var(--font-display);
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-transform: uppercase;
+    }
+
+    .btn-brutal-large:hover {
+        background: var(--rosso);
+        border-color: var(--rosso);
+        color: #FFFFFF;
+    }
+
+    /* ---- Coding Question Styles ---- */
+    .question-type-badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border: 1px solid;
+        margin-bottom: 0.75rem;
+    }
+
+    .badge-mcq {
+        color: #000000;
+        border-color: #000000;
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .badge-coding {
+        color: #0066ff;
+        border-color: #0066ff;
+        background: rgba(0, 102, 255, 0.05);
+    }
+
+    .badge-lang {
+        color: #666;
+        border-color: #999;
+        background: rgba(0, 0, 0, 0.03);
+        margin-left: 0.25rem;
+    }
+
+    .coding-problem-statement {
+        background: #f8f8f8;
+        border: 1px solid #e0e0e0;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        font-family: var(--font-body);
+    }
+
+    .test-cases-section {
+        margin-bottom: 1rem;
+    }
+
+    .test-case-row {
+        display: flex;
+        gap: 1rem;
+        padding: 0.5rem 0.75rem;
+        background: #f0f0f0;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 0.25rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+
+    .test-case-label {
+        color: #666;
+        font-family: var(--font-label);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        min-width: 70px;
+    }
+
+    .code-editor-wrapper {
+        position: relative;
+        border: 2px solid #000000;
+        background: #0d1117;
+    }
+
+    .code-editor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: #161b22;
+        border-bottom: 1px solid #30363d;
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        color: #8b949e;
+        letter-spacing: 0.05em;
+    }
+
+    .code-editor-textarea {
+        width: 100%;
+        min-height: 250px;
+        padding: 1rem;
+        background: #0d1117;
+        color: #c9d1d9;
+        border: none;
+        outline: none;
+        resize: vertical;
+        font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        tab-size: 4;
+        white-space: pre;
+        overflow-x: auto;
+    }
+
+    .code-editor-textarea::placeholder {
+        color: #484f58;
+    }
+
+    .code-editor-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.35rem 1rem;
+        background: #161b22;
+        border-top: 1px solid #30363d;
+        font-family: var(--font-label);
+        font-size: 0.7rem;
+        color: #484f58;
+    }
+
+    .question-divider {
+        border: none;
+        border-top: 1px solid #e0e0e0;
+        margin: 3rem 0;
+    }
+</style>
+
+<div id="fullscreen-gate">
+    <div class="dot-matrix" style="font-size: 2rem; color: #000000;">SECURE ENVIRONMENT REQUIRED</div>
+    <p class="label-font text-muted" style="text-transform: uppercase; max-width: 500px; text-align: center;">
+        This assessment runs in a strict isolated environment. Navigating away or minimizing will flag your attempt as
+        anomalous.
+    </p>
+    <button id="start-fullscreen-btn" class="btn btn-primary"
+        style="padding: 0 3rem; height: 50px; font-size: 1rem; border-radius: 4px;">INITIALIZE [ENTER]</button>
+</div>
+
+<div id="assessment-wrapper" style="display:none;" class="assessment-grid">
+    <!-- Left: Code Editor Form Space -->
+    <div class="left-panel">
+        <div class="editor-header">SESSION_ID: {{ attempt.assessment.title }}</div>
+        <div class="editor-subheader">JOB_REF: {{ attempt.assessment.job.title }} | Q_TOTAL: {{ questions|length }}
+        </div>
+
+        <form id="assessment-form" method="post" action="{% url 'attempt_submit' pk=attempt.pk %}">
+            {% csrf_token %}
+            {% for q in questions %}
+            <div class="question-block">
+                <div class="question-number">{{ forloop.counter|stringformat:"02d" }}</div>
+
+                {% if q.is_coding %}
+                <!-- ====== CODING QUESTION ====== -->
+                <div>
+                    <span class="question-type-badge badge-coding">CODING</span>
+                    <span class="question-type-badge badge-lang">{{ q.language|upper }}</span>
+                </div>
+                <div class="question-text">{{ q.question_text }}</div>
+
+                {% if q.coding_instructions %}
+                <div class="coding-problem-statement">{{ q.coding_instructions }}</div>
+                {% endif %}
+
+                <!-- Visible test cases -->
+                {% with visible_cases=q.test_cases.all %}
+                {% if visible_cases %}
+                <div class="test-cases-section">
+                    <div style="font-family: var(--font-label); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 0.5rem;">
+                        Sample Test Cases
+                    </div>
+                    {% for tc in visible_cases %}
+                    {% if not tc.is_hidden %}
+                    <div class="test-case-row">
+                        <div><span class="test-case-label">Input:</span> {{ tc.input_data }}</div>
+                        <div><span class="test-case-label">Expected:</span> {{ tc.expected_output }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <!-- Code editor -->
+                <div class="code-editor-wrapper">
+                    <div class="code-editor-header">
+                        <span>{{ q.language|upper }} EDITOR</span>
+                        <span>Q{{ forloop.counter|stringformat:"02d" }} // {{ q.points }} PTS</span>
+                    </div>
+                    <textarea
+                        name="code_{{ q.id }}"
+                        class="code-editor-textarea"
+                        placeholder="// Write your {{ q.language }} code here..."
+                        spellcheck="false"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                    >{{ q.starter_code }}</textarea>
+                    <div class="code-editor-footer">
+                        <span>LANG: {{ q.language|upper }}</span>
+                        <span class="char-count" data-for="code_{{ q.id }}">0 chars</span>
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- ====== MCQ QUESTION ====== -->
+                <div>
+                    <span class="question-type-badge badge-mcq">MCQ</span>
+                </div>
+                <div class="question-text">{{ q.question_text }}</div>
+                <div class="options-grid">
+                    {% for opt in q.options.all %}
+                    <div>
+                        <input type="radio" name="answer_{{ q.id }}" value="{{ opt.id }}" id="opt_{{ opt.id }}">
+                        <label for="opt_{{ opt.id }}" class="brutal-radio-label">{{ opt.option_text }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if not forloop.last %}
+            <hr class="question-divider">
+            {% endif %}
+            {% endfor %}
+            <div class="submit-bar">
+                <button type="submit" class="btn-brutal-large">COMPILE & SUBMIT [OK]</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right: Proctoring Manager Root -->
+    <div class="right-panel">
+        <div class="timer-panel">
+            <div class="label-font"
+                style="color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem;">
+                REMAINING TIME</div>
+            <div id="time-display" class="timer-display">--:--</div>
+        </div>
+        <div class="video-feed-container">
+            <div id="proctoring-root" class="absolute inset-0 z-50 flex items-center justify-center"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        let seconds = parseInt("{{ remaining_seconds|default:'0' }}", 10);
+        const form = document.getElementById('assessment-form');
+        const timeDisplay = document.getElementById('time-display');
+        const gate = document.getElementById('fullscreen-gate');
+        const wrapper = document.getElementById('assessment-wrapper');
+        let submitted = false;
+
+        function submitForm() {
+            if (submitted) return;
+            submitted = true;
+            form.submit();
+        }
+
+        function fmt(t) {
+            const m = Math.floor(t / 60);
+            const s = t % 60;
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function tick() {
+            if (seconds <= 0) {
+                submitForm();
+                return;
+            }
+            if (timeDisplay) {
+                timeDisplay.textContent = fmt(seconds);
+                if (seconds <= 60) {
+                    timeDisplay.style.color = 'var(--danger)';
+                    if (seconds <= 30) timeDisplay.style.animation = 'blink 1s infinite';
+                } else if (seconds <= 120) {
+                    timeDisplay.style.color = 'var(--warning)';
+                }
+            }
+            seconds--;
+            setTimeout(tick, 1000);
+        }
+        tick();
+
+        function enableAntiCheat() {
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) submitForm();
+            });
+            document.addEventListener('fullscreenchange', function () {
+                if (!document.fullscreenElement) submitForm();
+            });
+            document.addEventListener('webkitfullscreenchange', function () {
+                if (!document.webkitFullscreenElement) submitForm();
+            });
+            ['copy', 'cut', 'paste'].forEach(function (ev) {
+                document.addEventListener(ev, function (e) { e.preventDefault(); });
+            });
+            document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        }
+
+        function enterFullscreen() {
+            const el = document.documentElement;
+            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+
+            const loadExam = () => {
+                gate.style.display = 'none';
+                wrapper.style.display = 'grid'; // Grid display instead of block
+                enableAntiCheat();
+
+                // Try to mount immediately upon fullscreen load
+                try {
+                    if (window.mountProctoringManager) {
+                        console.log("Mounting Proctoring Manager to DOM...");
+                        window.mountProctoringManager('proctoring-root');
+                        console.log("Proctoring Manager Mounted.");
+                    } else {
+                        console.error('mountProctoringManager function not found on window object.');
+                    }
+                } catch (err) {
+                    console.error('Failed to mount ProctoringManager due to error:', err);
+                }
+            };
+
+            if (req) {
+                req.call(el).then(function () {
+                    loadExam();
+                }).catch(function (error) {
+                    console.warn("Fullscreen Override Prevented. Bypassing.", error);
+                    gate.querySelector('p').textContent = 'FULLSCREEN OVERRIDE FAILED. PROCEEDING...';
+                    setTimeout(loadExam, 800);
+                });
+            } else {
+                loadExam();
+            }
+        }
+
+        document.getElementById('start-fullscreen-btn').addEventListener('click', enterFullscreen);
+
+        // Fallback: If not mounted, try mounting it globally after 2 seconds
+        setTimeout(() => {
+            if (document.getElementById('proctoring-root') && document.getElementById('proctoring-root').innerHTML === '') {
+                console.log("Fallback mounting Proctoring Manager...");
+                if (window.mountProctoringManager) window.mountProctoringManager('proctoring-root');
+            }
+        }, 2000);
+
+        // ---- Code editor enhancements ----
+        document.querySelectorAll('.code-editor-textarea').forEach(function(textarea) {
+            // Tab key support
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    var start = this.selectionStart;
+                    var end = this.selectionEnd;
+                    this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 4;
+                }
+            });
+
+            // Character counter
+            textarea.addEventListener('input', function() {
+                var name = this.getAttribute('name');
+                var counter = document.querySelector('.char-count[data-for="' + name + '"]');
+                if (counter) {
+                    counter.textContent = this.value.length + ' chars';
+                }
+            });
+
+            // Initialize counter
+            var name = textarea.getAttribute('name');
+            var counter = document.querySelector('.char-count[data-for="' + name + '"]');
+            if (counter) {
+                counter.textContent = textarea.value.length + ' chars';
+            }
+        });
+    })();
+</script>
+
+<!-- Load sql.js WASM for Client-side Database -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<!-- Load Tailwind CDN for the React component's utility classes -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Load React Bundle (IIFE) -->
+<script src="{% static 'hiring/js/proctoring/proctoring.bundle.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}ATTEMPTS — CONTROL PANEL{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cp-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+    }
+    .cp-header h1 { font-size: 2.5rem; letter-spacing: 0.05em; }
+
+    .cp-nav {
+        display: flex; gap: 0; margin-bottom: 2rem;
+        border: 1px solid var(--border); overflow: hidden;
+    }
+    .cp-nav a {
+        flex: 1; text-align: center; padding: 1rem;
+        font-family: var(--font-label); font-size: 10px; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--text-muted) !important;
+        text-decoration: none !important; border-bottom: none !important;
+        border-right: 1px solid var(--border); background: var(--card-bg); transition: all 0.2s ease;
+    }
+    .cp-nav a:last-child { border-right: none; }
+    .cp-nav a:hover, .cp-nav a.active { background: var(--rosso) !important; color: #FFFFFF !important; }
+
+    .filter-tabs {
+        display: flex; gap: 0; margin-bottom: 2rem;
+        border: 1px solid var(--border); overflow: hidden; width: fit-content;
+    }
+    .filter-tabs a {
+        padding: 0.6rem 1.25rem; font-family: var(--font-label);
+        font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+        color: var(--text-muted) !important; text-decoration: none !important;
+        border-bottom: none !important; border-right: 1px solid var(--border);
+        background: var(--card-bg); transition: all 0.2s;
+    }
+    .filter-tabs a:last-child { border-right: none; }
+    .filter-tabs a:hover, .filter-tabs a.active { background: var(--btn-bg); color: var(--btn-text) !important; }
+
+    .attempt-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 1.25rem 1.5rem; background: var(--card-bg);
+        border: 1px solid var(--card-border); margin-bottom: -1px;
+        transition: all 0.15s ease; cursor: pointer;
+        text-decoration: none !important;
+    }
+    .attempt-row:hover {
+        border-color: var(--rosso); background: var(--surface-alt);
+        z-index: 1; position: relative;
+    }
+    .attempt-row:hover::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+        width: 3px; background: var(--rosso);
+    }
+    .attempt-name {
+        font-family: var(--font-display); font-size: 1rem;
+        text-transform: uppercase; letter-spacing: 0.03em; color: var(--text);
+    }
+    .attempt-meta {
+        font-family: var(--font-label); font-size: 9px;
+        letter-spacing: 1px; color: var(--text-muted); margin-top: 3px;
+    }
+    .attempt-score {
+        font-family: var(--font-display); font-size: 1.25rem;
+        font-weight: 700;
+    }
+    .result-badge {
+        font-family: var(--font-label); font-size: 8px;
+        letter-spacing: 1px; text-transform: uppercase;
+        padding: 3px 10px; border: 1px solid;
+    }
+    .badge-pass { color: var(--success); border-color: var(--success); }
+    .badge-fail { color: var(--rosso); border-color: var(--rosso); }
+    .badge-pending { color: var(--warning); border-color: var(--warning); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-header">
+    <div><h1>ATTEMPT_LOG //</h1></div>
+</div>
+
+<nav class="cp-nav">
+    <a href="{% url 'admin_dashboard' %}">[OVERVIEW]</a>
+    <a href="{% url 'admin_users' %}">[USERS]</a>
+    <a href="{% url 'admin_jobs' %}">[JOBS]</a>
+    <a href="{% url 'admin_assessments' %}">[ASSESSMENTS]</a>
+    <a href="{% url 'admin_attempts' %}" class="active">[ATTEMPTS]</a>
+    <a href="{% url 'admin_proctoring' %}">[PROCTORING]</a>
+</nav>
+
+<div class="filter-tabs">
+    <a href="{% url 'admin_attempts' %}" class="{% if status_filter == 'all' %}active{% endif %}">ALL</a>
+    <a href="{% url 'admin_attempts' %}?status=passed" class="{% if status_filter == 'passed' %}active{% endif %}">PASSED</a>
+    <a href="{% url 'admin_attempts' %}?status=failed" class="{% if status_filter == 'failed' %}active{% endif %}">FAILED</a>
+    <a href="{% url 'admin_attempts' %}?status=in_progress" class="{% if status_filter == 'in_progress' %}active{% endif %}">IN PROGRESS</a>
+</div>
+
+{% for att in attempts %}
+<a href="{% url 'admin_attempt_detail' pk=att.pk %}" class="attempt-row" style="border-bottom: none !important;">
+    <div>
+        <div class="attempt-name">{{ att.candidate.get_full_name|default:att.candidate.username }}</div>
+        <div class="attempt-meta">
+            {{ att.assessment.title }} · {{ att.assessment.job.title }} ·
+            STARTED {{ att.started_at|date:"M d, Y H:i" }}
+            {% if att.completed_at %} · COMPLETED {{ att.completed_at|date:"M d, Y H:i" }}{% endif %}
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        {% if att.is_complete %}
+        <span class="attempt-score" style="color: {% if att.passed %}var(--success){% else %}var(--rosso){% endif %};">
+            {{ att.percentage|floatformat:1 }}%
+        </span>
+        <span class="result-badge {% if att.passed %}badge-pass{% else %}badge-fail{% endif %}">
+            {% if att.passed %}PASSED{% else %}FAILED{% endif %}
+        </span>
+        {% else %}
+        <span class="result-badge badge-pending">IN PROGRESS</span>
+        {% endif %}
+    </div>
+</a>
+{% empty %}
+<div style="text-align: center; padding: 3rem; border: 1px dashed var(--border); background: var(--card-bg);">
+    <span style="font-family: var(--font-label); font-size: 10px; letter-spacing: 2px; color: var(--text-muted);">[NO ATTEMPTS FOUND]</span>
+</div>
+{% endfor %}
+{% endblock %}
