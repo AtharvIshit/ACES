@@ -5,3 +5,7 @@ __pycache__/
 venv/
 staticfiles/
 media/
+node_modules/
+*.log
+proctoring/build.log
+proctoring/vite_err*.log
