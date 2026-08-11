@@ -26,9 +26,3 @@ A Python Django web application for entry-level hiring. Recruiters can post jobs
 3. Start an assessment; a timer runs for the duration
 4. Answer all questions and submit
 5. View your score, pass/fail, and detailed feedback on areas to improve
-
-## Tech Stack
-
-- Python 3.10+
-- Django 4.2
-- SQLite (default; can switch to PostgreSQL for production)
